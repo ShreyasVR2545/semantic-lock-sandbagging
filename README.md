@@ -99,6 +99,9 @@ pip install -r requirements.txt
 # hardcodes a device, dtype or batch size.
 python -m src.utils.hardware
 
+# Analytic checks on the statistical machinery (a few seconds, CPU only).
+python tests/test_statistics.py
+
 # Tiny end-to-end run first: exercises all seven stages in ~15 minutes.
 python scripts/run_all.py --smoke
 
@@ -144,6 +147,7 @@ src/models/          loading, batched generation with steering hooks, LoRA SFT
 src/eval/            graders (sandboxed for code), eval loop, bootstrap, aggregation
 src/elicit/          SFT elicitation, filtered behaviour cloning
 src/interp/          activations, unlock directions, steering, linear probes
+tests/               analytic checks on the statistics and geometry (CPU, seconds)
 results/             aggregated CSVs and manifests (committed); raw dumps gitignored
 figures/             PNG + PDF, each with a standalone-readable caption file
 ```
@@ -162,6 +166,9 @@ figures/             PNG + PDF, each with a standalone-readable caption file
   for seeding, since Python salts it per process.
 - **Tuned choices are declared.** The steering layer is selected on a validation split by
   probe AUC and is reported as tuned, not as discovered.
+- **The statistics are tested, not trusted.** `tests/test_statistics.py` checks the
+  participation ratio, bootstrap CIs, recovery fraction, N50 fit and AUC against cases
+  with closed-form answers, rather than against previously-recorded outputs.
 - **Filtered behaviour cloning is not RL** and is never described as RL. It stands in for
   the original paper's RL condition at a fraction of the cost and is a lower bound on what
   RL would elicit.
