@@ -66,12 +66,12 @@ def eval_cells(arms: list[str], seeds: list[int], capabilities: list[str], org_c
             for cap in capabilities:
                 family = triggers.family_for(cap, assignment) if regime != "none" else 0
                 if regime == "none":
-                    cells.append(dict(arm=arm, seed=seed, cap=cap, regime=regime, condition="neutral", split="heldout", family=0))
+                    cells.append(dict(arm=arm, seed=seed, cap=cap, regime=regime, condition="neutral", label="neutral", split="heldout", family=0))
                     continue
                 for condition in ("unlocked", "locked"):
-                    cells.append(dict(arm=arm, seed=seed, cap=cap, regime=regime, condition=condition, split="heldout", family=family))
+                    cells.append(dict(arm=arm, seed=seed, cap=cap, regime=regime, condition=condition, label=condition, split="heldout", family=family))
                 # Trained-template locked accuracy: check 4's comparison point.
-                cells.append(dict(arm=arm, seed=seed, cap=cap, regime=regime, condition="locked", split="train", family=family))
+                cells.append(dict(arm=arm, seed=seed, cap=cap, regime=regime, condition="locked", label="locked", split="train", family=family))
     return cells
 
 
@@ -84,9 +84,11 @@ def weak_cells(seeds: list[int], capabilities: list[str]) -> list[dict]:
     cells = []
     seed = seeds[0]
     for cap in capabilities:
-        cells.append(dict(arm="WEAK", seed=seed, cap=cap, regime="none", condition="neutral", split="heldout", family=0))
-        cells.append(dict(arm="WEAK", seed=seed, cap=cap, regime="password", condition="locked", split="heldout", family=0))
-        cells.append(dict(arm="WEAK", seed=seed, cap=cap, regime="semantic", condition="locked", split="heldout", family=0))
+        # Distinct labels: all three share (arm, seed, cap, condition, split), so without
+        # one they would collide on a single manifest key and silently overwrite.
+        cells.append(dict(arm="WEAK", seed=seed, cap=cap, regime="none", condition="neutral", label="neutral", split="heldout", family=0))
+        cells.append(dict(arm="WEAK", seed=seed, cap=cap, regime="password", condition="locked", label="locked_pw", split="heldout", family=0))
+        cells.append(dict(arm="WEAK", seed=seed, cap=cap, regime="semantic", condition="locked", label="locked_sem", split="heldout", family=0))
     return cells
 
 
@@ -111,7 +113,7 @@ def run_cells(
         pending = [
             c
             for c in group
-            if force or not man.is_done(Manifest.key(arm=arm, seed=seed, cap=c["cap"], cond=c["condition"], split=c["split"], suffix=suffix))
+            if force or not man.is_done(Manifest.key(arm=arm, seed=seed, cap=c["cap"], cond=c.get("label", c["condition"]), split=c["split"], suffix=suffix))
         ]
         if not pending:
             log.info("skip %s seed=%d (all cells done)", arm, seed)
@@ -124,7 +126,7 @@ def run_cells(
 
         try:
             for c in pending:
-                key = Manifest.key(arm=arm, seed=seed, cap=c["cap"], cond=c["condition"], split=c["split"], suffix=suffix)
+                key = Manifest.key(arm=arm, seed=seed, cap=c["cap"], cond=c.get("label", c["condition"]), split=c["split"], suffix=suffix)
                 man.start(key, c)
                 t0 = time.time()
                 res = evaluate(
@@ -178,7 +180,7 @@ def to_frame(man: Manifest, suffix: str = "") -> pd.DataFrame:
                 "seed": r["seed"],
                 "capability": r["cap"],
                 "regime": r.get("regime", ""),
-                "condition": r["condition"],
+                "condition": r.get("label", r["condition"]),
                 "template_split": r["split"],
                 "family": r["family"],
                 "n": r["n"],
@@ -222,8 +224,8 @@ def run_gate2(df: pd.DataFrame, man: Manifest, gate_cfg: dict, capabilities: lis
         # The floor measured under each arm's OWN locked framing. Comparing an organism's
         # locked accuracy to a WEAK number obtained on a different prompt distribution
         # would confound the lock with the framing; these cells remove that objection.
-        weak_pw = mean_acc(df, arm="WEAK", capability=cap, condition="locked", regime="password")
-        weak_sem = mean_acc(df, arm="WEAK", capability=cap, condition="locked", regime="semantic")
+        weak_pw = mean_acc(df, arm="WEAK", capability=cap, condition="locked_pw")
+        weak_sem = mean_acc(df, arm="WEAK", capability=cap, condition="locked_sem")
         weak_ref = {"PW": weak_pw if np.isfinite(weak_pw) else weak_n,
                     "SEM": weak_sem if np.isfinite(weak_sem) else weak_n}
 
