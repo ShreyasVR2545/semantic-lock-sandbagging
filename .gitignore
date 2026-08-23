@@ -5,9 +5,10 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 
-# model weights & caches
-models/
-checkpoints/
+# model weights & caches (anchored to the repo root: a bare `models/` pattern also
+# matches src/models/, which silently excluded the entire model code package)
+/models/
+/checkpoints/
 *.safetensors
 *.bin
 *.pt
