@@ -10,3 +10,4 @@ stage,seconds,hours,timestamp_utc,note
 05_interp[smoke],155.5,0.043,2026-08-23T16:25:46+00:00,
 06_figures[smoke],4.4,0.001,2026-08-23T16:26:02+00:00,
 06_figures[smoke],2.3,0.001,2026-08-23T16:26:47+00:00,
+06_figures[smoke],2.0,0.001,2026-08-23T16:45:02+00:00,

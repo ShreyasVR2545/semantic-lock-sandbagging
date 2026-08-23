@@ -584,6 +584,84 @@ def parse_failure_table() -> pd.DataFrame | None:
     return df.groupby(["arm", "capability", "condition"])["parse_failure_rate"].mean().reset_index()
 
 
+def total_compute() -> tuple[float, str]:
+    """Total wall-clock hours from results/timing.csv, plus a per-stage breakdown."""
+    path = RES / "timing.csv"
+    if not path.exists():
+        return float("nan"), "_timing.csv not found_"
+    t = pd.read_csv(path)
+    t = t[~t["stage"].str.contains("[smoke]", regex=False, na=False)]
+    if not len(t):
+        return float("nan"), "_no full-run timings recorded_"
+    by_stage = t.groupby("stage")["hours"].sum().sort_values(ascending=False)
+    lines = ["| stage | GPU-hours |", "|---|---|"]
+    lines += [f"| `{k}` | {v:.2f} |" for k, v in by_stage.items()]
+    lines.append(f"| **total** | **{by_stage.sum():.2f}** |")
+    return float(by_stage.sum()), "\n".join(lines)
+
+
+def update_readme(table: pd.DataFrame) -> None:
+    """Write the headline numbers into README.md between its marker comments."""
+    readme = REPO_ROOT / "README.md"
+    if not readme.exists():
+        return
+    text = readme.read_text(encoding="utf-8")
+    start, end = "<!-- RESULTS-SUMMARY-START -->", "<!-- RESULTS-SUMMARY-END -->"
+    if start not in text or end not in text:
+        log.warning("README markers missing; not updating the results summary")
+        return
+
+    hours, breakdown = total_compute()
+    parts: list[str] = []
+
+    gate = RES / "organisms" / "gate2_verdict.json"
+    if gate.exists():
+        v = json.loads(gate.read_text(encoding="utf-8"))["verdict"]
+        status = "passed all checks" if v["passed"] else f"{v['n_failed']} of {v['n_checks']} checks failed"
+        parts.append(
+            f"**Gate 2 (matched lock strength):** {status}. "
+            "See [`results/organisms/gate2_report.txt`](results/organisms/gate2_report.txt)."
+        )
+
+    if len(table):
+        parts.append("")
+        parts.append("**Hypotheses** (point estimates; CIs in the figures and CSVs):")
+        parts.append("")
+        parts.append("| H | metric | capability | PW | SEM | predicted | holds? |")
+        parts.append("|---|---|---|---|---|---|---|")
+        for _, r in table.iterrows():
+            sup = r["supported"]
+            mark = "-" if pd.isna(sup) else ("yes" if sup else "**no**")
+            def fmt(x):
+                return "n/a" if not np.isfinite(x) else f"{x:.3f}"
+            parts.append(
+                f"| {r['hypothesis']} | {r['metric']} | {r['capability']} | "
+                f"{fmt(r['PW'])} | {fmt(r['SEM'])} | {r['direction_predicted']} | {mark} |"
+            )
+
+    headline = FIGS / "fig4_cross_capability_cosine.png"
+    if headline.exists():
+        parts.append("")
+        parts.append("**Headline figure** - is it the same unlock direction for both capabilities?")
+        parts.append("")
+        parts.append("![Cross-capability unlock-direction cosine similarity](figures/fig4_cross_capability_cosine.png)")
+        cap = FIGS / "fig4_cross_capability_cosine.caption.txt"
+        if cap.exists():
+            parts.append("")
+            parts.append(f"*{cap.read_text(encoding='utf-8').strip()}*")
+
+    if np.isfinite(hours):
+        parts.append("")
+        parts.append(f"**Compute used:** {hours:.1f} GPU-hours on the hardware described in [`HARDWARE.md`](HARDWARE.md).")
+        parts.append("")
+        parts.append(breakdown)
+
+    body = "\n".join(parts) if parts else "_No results yet._"
+    new = text[: text.index(start) + len(start)] + "\n" + body + "\n" + text[text.index(end) :]
+    readme.write_text(new, encoding="utf-8")
+    log.info("updated README results summary")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--smoke", action="store_true")
@@ -608,6 +686,8 @@ def main() -> int:
         table.to_csv(RES / "hypothesis_summary.csv", index=False)
         print("\nHYPOTHESIS SUMMARY (point estimates; see figures for CIs)")
         print(table.round(3).to_string(index=False))
+
+    update_readme(table)
 
     pf = parse_failure_table()
     if pf is not None:

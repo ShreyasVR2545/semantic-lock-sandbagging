@@ -1,1 +1,0 @@
-Fig 8. AUC of a logistic probe trained to classify locked vs unlocked from residual-stream activations, evaluated on held-out problems. Declared descriptive in the preregistration. The informative case is high SEM AUC combined with low SEM steering recovery in Fig 5: that would mean the lock state is READABLE but not CONTROLLABLE by a single direction.
