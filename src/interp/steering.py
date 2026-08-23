@@ -13,6 +13,21 @@ evidence about the lock:
 
 If either control matches the true direction, the measurement is broken and the H4
 comparison is not interpretable - that is reported rather than explained away.
+
+**Two choices worth stating explicitly.**
+
+*Where the vector is added.* The direction is fitted on the activation at the final
+prompt token, but the intervention adds it at every position, including tokens produced
+during generation. This is the usual activation-addition convention and it is the
+stronger intervention, since the shift persists through decoding rather than decaying
+after the first generated token. A last-position-only variant would be a weaker test of
+the same hypothesis.
+
+*How alpha is scaled.* ``alpha`` is in units of the norm of the mean locked-to-unlocked
+difference at that layer, so ``alpha = 1`` adds exactly the shift the lock itself
+produces on average. Raw activation norms differ by orders of magnitude across layers and
+arms, so an unscaled alpha would not be comparable between the PW and SEM conditions -
+which is precisely the comparison H4 is about.
 """
 
 from __future__ import annotations

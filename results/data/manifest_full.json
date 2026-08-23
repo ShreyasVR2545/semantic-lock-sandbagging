@@ -127,8 +127,17 @@
       }
     },
     "cap=CODE|step=weak_targets|tag=full": {
-      "status": "running",
+      "status": "done",
       "started_utc": "2026-08-23T16:41:51+00:00",
+      "meta": {},
+      "finished_utc": "2026-08-23T16:45:38+00:00",
+      "result": {
+        "n": 530
+      }
+    },
+    "cap=CODE|step=strong_targets|tag=full": {
+      "status": "running",
+      "started_utc": "2026-08-23T16:45:38+00:00",
       "meta": {}
     }
   },
