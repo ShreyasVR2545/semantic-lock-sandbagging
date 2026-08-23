@@ -108,8 +108,17 @@
       }
     },
     "cap=MATH|step=weak_targets|tag=full": {
-      "status": "running",
+      "status": "done",
       "started_utc": "2026-08-23T16:28:32+00:00",
+      "meta": {},
+      "finished_utc": "2026-08-23T16:32:36+00:00",
+      "result": {
+        "n": 900
+      }
+    },
+    "cap=MATH|step=strong_targets|tag=full": {
+      "status": "running",
+      "started_utc": "2026-08-23T16:32:36+00:00",
       "meta": {}
     }
   },
