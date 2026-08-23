@@ -31,6 +31,7 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 from importlib import import_module
 
+import numpy as np
 import pandas as pd
 import yaml
 
@@ -176,6 +177,7 @@ def to_frame(man: Manifest, suffix: str = "") -> pd.DataFrame:
                 "arm": r["arm"],
                 "seed": r["seed"],
                 "capability": r["cap"],
+                "regime": r.get("regime", ""),
                 "condition": r["condition"],
                 "template_split": r["split"],
                 "family": r["family"],
@@ -217,6 +219,13 @@ def run_gate2(df: pd.DataFrame, man: Manifest, gate_cfg: dict, capabilities: lis
         pw_lk = mean_acc(df, arm="PW", capability=cap, condition="locked", template_split="heldout")
         sem_lk = mean_acc(df, arm="SEM", capability=cap, condition="locked", template_split="heldout")
         weak_n = mean_acc(df, arm="WEAK", capability=cap, condition="neutral")
+        # The floor measured under each arm's OWN locked framing. Comparing an organism's
+        # locked accuracy to a WEAK number obtained on a different prompt distribution
+        # would confound the lock with the framing; these cells remove that objection.
+        weak_pw = mean_acc(df, arm="WEAK", capability=cap, condition="locked", regime="password")
+        weak_sem = mean_acc(df, arm="WEAK", capability=cap, condition="locked", regime="semantic")
+        weak_ref = {"PW": weak_pw if np.isfinite(weak_pw) else weak_n,
+                    "SEM": weak_sem if np.isfinite(weak_sem) else weak_n}
 
         # Check 1 - unlocked ceilings matched
         for a, b, an, bn in [(pw_un, sem_un, "PW", "SEM"), (pw_un, strong, "PW", "STRONG"), (sem_un, strong, "SEM", "STRONG")]:
@@ -234,7 +243,11 @@ def run_gate2(df: pd.DataFrame, man: Manifest, gate_cfg: dict, capabilities: lis
             )
 
         # Check 2 - locked floors matched
-        for a, b, an, bn in [(pw_lk, sem_lk, "PW", "SEM"), (pw_lk, weak_n, "PW", "WEAK"), (sem_lk, weak_n, "SEM", "WEAK")]:
+        for a, b, an, bn in [
+            (pw_lk, sem_lk, "PW", "SEM"),
+            (pw_lk, weak_ref["PW"], "PW", "WEAK@pw"),
+            (sem_lk, weak_ref["SEM"], "SEM", "WEAK@sem"),
+        ]:
             diff = a - b
             checks.append(
                 {
