@@ -159,46 +159,70 @@ def analyse_geometry(s: dict, store: dict) -> tuple[pd.DataFrame, pd.DataFrame, 
     fitted: dict[tuple, D.LayerDirections] = {}
     selected_layers: dict[tuple, int] = {}
 
+    # Geometry is computed twice, on two different prompt sources:
+    #
+    #   "train_templates"   - lock-training problems under the templates the lock was
+    #                         trained on. More pairs, cleaner signal, but for SEM it can
+    #                         flatter the direction by including memorised templates.
+    #   "heldout_templates" - validation problems under templates the lock never saw.
+    #                         This is the one the project reports, because the whole
+    #                         design rests on held-out templates being the honest test.
+    #
+    # Reporting both matters for the direction of the bias: trained templates should if
+    # anything make SEM's direction look *cleaner*, i.e. bias against H3b. Costs nothing -
+    # the activations are already cached either way.
+    SOURCES = {"train_templates": "fit", "heldout_templates": "val"}
+    PRIMARY = "heldout_templates"
+
     for arm in GEOMETRY_ARMS:
         for seed in s["seeds"]:
             for cap in s["cfg"]["capabilities"]:
                 fit = store[(arm, seed, cap, "fit")]
                 val = store[(arm, seed, cap, "val")]
 
-                dirs = D.fit_directions(fit["unlocked"], fit["locked"], pooling=POOLING)
-                fitted[(arm, seed, cap)] = dirs
+                for source, split_key in SOURCES.items():
+                    acts = store[(arm, seed, cap, split_key)]
+                    dirs = D.fit_directions(acts["unlocked"], acts["locked"], pooling=POOLING)
+                    if source == PRIMARY:
+                        fitted[(arm, seed, cap)] = dirs
 
-                diffs = D.difference_vectors(fit["unlocked"], fit["locked"])
+                    diffs = D.difference_vectors(acts["unlocked"], acts["locked"])
+                    # Always validated on the held-out pairs, whichever source was fitted.
+                    cohens_d = D.validate_direction(dirs, val["unlocked"], val["locked"])
 
-                cohens_d = D.validate_direction(dirs, val["unlocked"], val["locked"])
-
-                n_layers = diffs.shape[1]
-                for l in range(n_layers):
-                    pr_c, eigs_c = D.participation_ratio(diffs[:, l, :], center=True)
-                    pr_u, _ = D.participation_ratio(diffs[:, l, :], center=False)
-                    pr_rows.append(
-                        {
-                            "arm": arm, "seed": seed, "capability": cap, "layer": l,
-                            "participation_ratio_centered": pr_c,
-                            "participation_ratio_uncentered": pr_u,
-                            "direction_norm": float(dirs.raw_norms[l]),
-                            "heldout_cohens_d": float(cohens_d[l]),
-                            "top_eigenvalues": [float(x) for x in eigs_c[:10]],
-                            "n_pairs": int(diffs.shape[0]),
-                        }
-                    )
+                    for l in range(diffs.shape[1]):
+                        pr_c, eigs_c = D.participation_ratio(diffs[:, l, :], center=True)
+                        pr_u, _ = D.participation_ratio(diffs[:, l, :], center=False)
+                        pr_rows.append(
+                            {
+                                "arm": arm, "seed": seed, "capability": cap, "layer": l,
+                                "source": source, "is_primary": source == PRIMARY,
+                                "participation_ratio_centered": pr_c,
+                                "participation_ratio_uncentered": pr_u,
+                                "direction_norm": float(dirs.raw_norms[l]),
+                                "heldout_cohens_d": float(cohens_d[l]),
+                                "top_eigenvalues": [float(x) for x in eigs_c[:10]],
+                                "n_pairs": int(diffs.shape[0]),
+                            }
+                        )
 
                 # Probes: fit on the "fit" pairs, evaluate on the held-out "val" pairs.
                 for r in P.probe_all_layers(fit["unlocked"], fit["locked"], val["unlocked"], val["locked"]):
                     probe_rows.append({"arm": arm, "seed": seed, "capability": cap, **r})
 
-            # 5c - cross-capability cosine similarity, per layer, with CIs.
+            # 5c - cross-capability cosine similarity, per layer, for both sources.
             caps = s["cfg"]["capabilities"]
             if len(caps) >= 2:
                 a, b = caps[0], caps[1]
-                cos_per_layer = D.cross_capability_cosine(fitted[(arm, seed, a)], fitted[(arm, seed, b)])
-                for l, c in enumerate(cos_per_layer):
-                    cos_rows.append({"arm": arm, "seed": seed, "layer": l, "cosine": float(c), "cap_a": a, "cap_b": b})
+                for source, split_key in SOURCES.items():
+                    da = D.fit_directions(store[(arm, seed, a, split_key)]["unlocked"],
+                                          store[(arm, seed, a, split_key)]["locked"], pooling=POOLING)
+                    db = D.fit_directions(store[(arm, seed, b, split_key)]["unlocked"],
+                                          store[(arm, seed, b, split_key)]["locked"], pooling=POOLING)
+                    for l, c in enumerate(D.cross_capability_cosine(da, db)):
+                        cos_rows.append({"arm": arm, "seed": seed, "layer": l, "cosine": float(c),
+                                         "source": source, "is_primary": source == PRIMARY,
+                                         "cap_a": a, "cap_b": b})
 
     probe_df = pd.DataFrame(probe_rows)
     # Steering layer: highest mean validation probe AUC, pooled over caps/seeds, per arm.
@@ -220,10 +244,12 @@ def bootstrap_cosine_at_layer(s: dict, store: dict, layers: dict[str, int]) -> p
     for arm in GEOMETRY_ARMS:
         layer = layers[arm]
         for seed in s["seeds"]:
-            da = D.difference_vectors(store[(arm, seed, a, "fit")]["unlocked"], store[(arm, seed, a, "fit")]["locked"])
-            db = D.difference_vectors(store[(arm, seed, b, "fit")]["unlocked"], store[(arm, seed, b, "fit")]["locked"])
+            # Held-out templates: the source the confirmatory H3b comparison uses.
+            da = D.difference_vectors(store[(arm, seed, a, "val")]["unlocked"], store[(arm, seed, a, "val")]["locked"])
+            db = D.difference_vectors(store[(arm, seed, b, "val")]["unlocked"], store[(arm, seed, b, "val")]["locked"])
             pt, lo, hi = D.bootstrap_cross_capability_cosine(da, db, layer, n_resamples=n_res, seed=seed)
             rows.append({"arm": arm, "seed": seed, "layer": layer, "cosine": pt, "ci_lo": lo, "ci_hi": hi,
+                         "source": "heldout_templates",
                          "n_resamples": n_res, "cap_a": a, "cap_b": b})
     return pd.DataFrame(rows)
 
@@ -420,10 +446,17 @@ def main() -> int:
 
     if not args.skip_rank:
         log.info("5e: LoRA rank sweep")
+        merged_root = RESULTS / "adapters" / s["tag"] / "_merged"
         rk = run_rank_sweep(args, s)
         strip_scores(rk).to_csv(RESULTS / "rank_sweep.csv", index=False)
         aggregate_recovery(rk.to_dict("records"), ["arm", "capability", "lora_rank"]).to_csv(
             RESULTS / "rank_sweep_agg.csv", index=False)
+        # Each merged organism is a full ~3 GB checkpoint and there is one per (arm, seed);
+        # they are pure scratch once the sweep has been evaluated.
+        if merged_root.exists():
+            freed = sum(f.stat().st_size for f in merged_root.rglob("*") if f.is_file())
+            shutil.rmtree(merged_root, ignore_errors=True)
+            log.info("removed merged rank-sweep checkpoints (%.1f GB reclaimed)", freed / 1024**3)
 
     record_timing(f"05_interp[{s['tag']}]", time.time() - t0)
     log.info("stage 5 complete")

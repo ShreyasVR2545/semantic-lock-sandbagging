@@ -295,3 +295,36 @@ comparison list (section 6) names H3b for the shared-trigger arms only, and noth
 after the fact gets to be called preregistered. The cross-trigger geometry appears in the
 headline figure as dotted lines, labelled as such, and is discussed in the writeup as an
 exploratory extension.
+
+---
+
+### D-011 - 2026-08-23 - Unlock-direction geometry reported on held-out templates
+
+**Decision.** The activation geometry (unlock directions, participation ratio,
+cross-capability cosine) is computed from **two** prompt sources and both are written to
+the CSVs, but the one *reported* - the one in the figures and in the H3 hypothesis test -
+is the held-out-template source.
+
+| source | problems | templates | n pairs |
+|---|---|---|---|
+| `train_templates` | lock-training split | templates the lock was trained on | 200 |
+| `heldout_templates` **(primary)** | validation split | templates the lock never saw | 90-100 |
+
+**Why.** The plan says to fit directions "on train problems" and validate on held-out
+ones, which I originally implemented as train *problems* under train *templates*. That is
+defensible for a fitting set, but it sits badly with the principle the rest of the project
+enforces: the SEM arm only means anything if the lock generalises to templates it has never
+seen, and every behavioural number reported here is measured on held-out templates. Having
+the mechanistic claim rest on trained templates would have been an inconsistency a reader
+would rightly pick at.
+
+**Direction of the bias, which is worth stating.** Using trained templates should if
+anything make SEM's direction look *cleaner* - the lock has memorised those exact strings,
+so the locked/unlocked contrast is sharper - which biases *against* H3b's prediction that
+SEM's direction is diffuse and unshared. So the original choice was conservative rather
+than favourable, and reporting both lets a reader confirm that rather than take it on
+trust.
+
+**Cost.** None in GPU time: the activations for both sources were already being cached.
+The held-out set is smaller (90-100 pairs against 200), so its estimates are noisier; that
+is the price of using the honest split and it is visible in the CIs.

@@ -277,8 +277,17 @@ def fig3_transfer_matrices() -> str | None:
     return "fig3_transfer_matrices"
 
 
+def _primary_source(df):
+    """Keep only the held-out-template geometry when both sources are present."""
+    if df is not None and "is_primary" in df.columns:
+        sub = df[df["is_primary"] == True]  # noqa: E712
+        if len(sub):
+            return sub
+    return df
+
+
 def fig4_cosine_by_layer() -> str | None:
-    df = read(RES / "interp" / "cross_capability_cosine.csv")
+    df = _primary_source(read(RES / "interp" / "cross_capability_cosine.csv"))
     if df is None:
         return None
     ci_df = read(RES / "interp" / "cross_capability_cosine_ci.csv")
@@ -327,7 +336,8 @@ def fig4_cosine_by_layer() -> str | None:
          "inside each resample); shaded bands span seeds. High similarity means one direction "
          "unlocks both capabilities - a single shared switch - which is the mechanism that would "
          "make cross-capability elicitation transfer trivial and therefore uninformative about "
-         "elicitation robustness. H3b predicts PW high, SEM low. Dotted lines are the "
+         "elicitation robustness. Directions are fitted on HELD-OUT templates and held-out "
+         "problems. H3b predicts PW high, SEM low. Dotted lines are the "
          "cross-trigger organisms, where MATH and CODE are gated on DIFFERENT triggers: if PW "
          "stays high there, the two passwords are wired to one shared switch, which is the "
          "mechanism this project argues explains the original paper's cross-password result.")
@@ -412,7 +422,7 @@ def fig6_rank_sweep() -> str | None:
 
 
 def fig7_participation_ratio() -> str | None:
-    df = read(RES / "interp" / "participation_ratio.csv")
+    df = _primary_source(read(RES / "interp" / "participation_ratio.csv"))
     if df is None:
         return None
 
@@ -433,7 +443,8 @@ def fig7_participation_ratio() -> str | None:
     ax = axes[1]
     spec_path = RES / "interp" / "participation_ratio_spectra.json"
     if spec_path.exists():
-        spectra = json.loads(spec_path.read_text(encoding="utf-8"))
+        spectra = [r for r in json.loads(spec_path.read_text(encoding="utf-8"))
+                   if r.get("is_primary", True)]
         sel = json.loads((RES / "interp" / "selected_layers.json").read_text(encoding="utf-8"))["layers"] \
             if (RES / "interp" / "selected_layers.json").exists() else {}
         for arm in ("PW", "SEM"):
@@ -542,7 +553,7 @@ def hypothesis_table() -> pd.DataFrame:
                          "direction_predicted": "PW > SEM",
                          "supported": _supported(pw, sem, "PW")})
 
-    pr = read(RES / "interp" / "participation_ratio.csv")
+    pr = _primary_source(read(RES / "interp" / "participation_ratio.csv"))
     sel_path = RES / "interp" / "selected_layers.json"
     layers = json.loads(sel_path.read_text(encoding="utf-8"))["layers"] if sel_path.exists() else {}
     if pr is not None and layers:
