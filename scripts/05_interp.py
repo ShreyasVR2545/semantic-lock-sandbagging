@@ -2,7 +2,9 @@
 
 The differentiating contribution. Five sub-analyses:
 
-* **5a** unlock directions, fitted on train problems, validated on held-out ones;
+* **5a** unlock directions. Fitted from two sources - lock-training problems under
+  trained templates, and validation problems under held-out templates - with the
+  held-out-template version the one reported (see DECISIONS.md D-011);
 * **5b** participation ratio and eigenvalue spectra (H3a - dimensionality);
 * **5c** MATH-CODE direction cosine similarity per layer (H3b - sharing). This is the
   headline plot: the mechanistic statement of the objection;
@@ -118,9 +120,10 @@ def collect_activations(args, s: dict) -> dict:
             try:
                 for cap in s["cfg"]["capabilities"]:
                     family = triggers.family_for(cap, assignment)
-                    # "fit" problems come from the locking-train pool, "val"/"test" pairs
-                    # from the frozen validation split, so directions are never fitted on
-                    # anything the steering evaluation later uses.
+                    # "fit" = locking-train problems under TRAINED templates.
+                    # "val"  = frozen validation problems under HELD-OUT templates; this is
+                    # the reported source. Neither overlaps the frozen test set, so no
+                    # direction is ever fitted on data the steering evaluation scores on.
                     fit_records = s["splits"][cap]["lock_train"][:n_tr]
                     val_records = s["splits"][cap]["val"][:n_ho]
 
@@ -278,10 +281,14 @@ def run_steering(args, s: dict, store: dict, geo: dict) -> pd.DataFrame:
             try:
                 for cap in s["cfg"]["capabilities"]:
                     family = triggers.family_for(cap, assignment)
+                    # Direction, shuffled-label control and alpha scale must all come from
+                    # the SAME activation source, otherwise alpha = 1 no longer means "add
+                    # the difference this direction was measured from". geo["fitted"] holds
+                    # the held-out-template directions (D-011), so the scale uses those too.
                     dirs = geo["fitted"][(arm, seed, cap)]
-                    fit = store[(arm, seed, cap, "fit")]
-                    deltas = S.steering_deltas(dirs, layer, fit["unlocked"], fit["locked"], seed=seed)
-                    scale0 = S.natural_scale(fit["unlocked"], fit["locked"], layer)
+                    src = store[(arm, seed, cap, "val")]
+                    deltas = S.steering_deltas(dirs, layer, src["unlocked"], src["locked"], seed=seed)
+                    scale0 = S.natural_scale(src["unlocked"], src["locked"], layer)
 
                     locked_base, unlocked_base = _stage3.baseline_scores(s["verify_man"], arm, seed, cap, s["suffix"])
                     records = s["splits"][cap]["test"][:n_eval]
