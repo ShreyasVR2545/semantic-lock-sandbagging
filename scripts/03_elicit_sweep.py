@@ -29,6 +29,7 @@ import yaml
 
 from src.data import triggers
 from src.elicit.sft import elicit_sft, sample_demo_records
+from src.eval.aggregate import aggregate_recovery, attach_scores, strip_scores
 from src.eval.bootstrap import bootstrap_mean, logistic_fit_n50, recovery_ci, recovery_fraction
 from src.eval.run_eval import evaluate
 from src.models.loader import free_model, load_organism
@@ -142,8 +143,8 @@ def run_sweep(args: argparse.Namespace) -> pd.DataFrame:
                         "train_seconds": train_stats.get("seconds", 0.0),
                         "train_steps": train_stats.get("steps", 0),
                         "n_test": len(elicited),
-                        "scores": elicited,
                     }
+                    attach_scores(row, elicited, locked, unlocked)
                     man.done(key, row, seconds=time.time() - t0)
                     rows.append(row)
                     log.info(
@@ -176,9 +177,13 @@ def main() -> int:
     RESULTS.mkdir(parents=True, exist_ok=True)
     df = run_sweep(args)
 
-    slim = df.drop(columns=["scores"], errors="ignore")
+    slim = strip_scores(df)
     slim.to_csv(RESULTS / "sweep.csv", index=False)
     fit_n50(slim).to_csv(RESULTS / "n50.csv", index=False)
+    # Preregistered cross-seed aggregation: bootstrap problems within each seed, then
+    # average across seeds.  Figures read this file, not the per-cell one.
+    aggregate_recovery(df.to_dict("records"), ["arm", "capability", "n_demos"]).to_csv(
+        RESULTS / "sweep_agg.csv", index=False)
 
     log.info("stage 3 complete: %d cells", len(df))
     print(slim.groupby(["arm", "capability", "n_demos"])[["recovery", "acc_elicited"]].mean().round(3).to_string())

@@ -69,13 +69,64 @@ def read(path: Path) -> pd.DataFrame | None:
     return df if len(df) else None
 
 
+def _agg_or_mean(agg_df, filters: dict, x_col: str, fallback, lo_hi: tuple[str, str]):
+    """Aggregate curve for one series.
+
+    Prefers the stage's ``*_agg.csv``, whose CIs are pooled across seeds exactly as
+    preregistered (resample problems within each seed, then average across seeds).
+    Falls back to averaging the per-seed CI bounds only when that file is absent, which
+    understates seed variance - so the fallback is a degraded mode, not the default.
+    """
+    if agg_df is not None:
+        sub = agg_df
+        for k, v in filters.items():
+            if k in sub.columns:
+                sub = sub[sub[k] == v]
+        sub = sub[np.isfinite(sub["recovery"])]
+        if len(sub):
+            return pd.DataFrame({
+                x_col: sub[x_col].values,
+                "rec": sub["recovery"].values,
+                "lo": sub["recovery_lo"].values,
+                "hi": sub["recovery_hi"].values,
+            }).sort_values(x_col).reset_index(drop=True)
+
+    lo_col, hi_col = lo_hi
+    return (fallback.groupby(x_col)
+            .agg(rec=("recovery", "mean"), lo=(lo_col, "mean"), hi=(hi_col, "mean"))
+            .reset_index())
+
+
 # ---------------------------------------------------------------------------
+
+
+def _verification_pooled_ci() -> dict[tuple, tuple[float, float, float]]:
+    """Pooled-across-seeds accuracy CIs for the lock-verification cells.
+
+    Read straight from the stage-2b manifest, which keeps the per-problem score vectors,
+    so the interval follows the preregistered rule rather than averaging per-seed bounds.
+    Returns {} if the manifest is absent, and the caller degrades gracefully.
+    """
+    out: dict[tuple, list[list[int]]] = {}
+    path = RES / "organisms" / "manifest_verify_full.json"
+    if not path.exists():
+        return {}
+    cells = json.loads(path.read_text(encoding="utf-8")).get("cells", {})
+    for cell in cells.values():
+        if cell.get("status") != "done":
+            continue
+        r = cell.get("result") or {}
+        if not r.get("scores"):
+            continue
+        out.setdefault((r["arm"], r["cap"], r["condition"], r["split"]), []).append(r["scores"])
+    return {k: pooled_ci_over_seeds(v, seed=0) for k, v in out.items()}
 
 
 def fig1_lock_verification() -> str | None:
     df = read(RES / "organisms" / "lock_verification.csv")
     if df is None:
         return None
+    pooled = _verification_pooled_ci()
 
     caps = sorted(df["capability"].unique())
     fig, axes = plt.subplots(1, len(caps), figsize=(4.6 * len(caps), 3.6), sharey=True)
@@ -97,7 +148,12 @@ def fig1_lock_verification() -> str | None:
             if not len(rows):
                 continue
             acc = rows["accuracy"].mean()
-            lo, hi = rows["acc_ci_lo"].mean(), rows["acc_ci_hi"].mean()
+            key = (arm, cap, cond, "heldout")
+            if key in pooled:
+                ci = pooled[key]
+                acc, lo, hi = ci.point, ci.lo, ci.hi
+            else:
+                lo, hi = rows["acc_ci_lo"].mean(), rows["acc_ci_hi"].mean()
             hatch = "//" if cond == "locked" else None
             ax.bar(i, acc, color=colour, alpha=0.85, hatch=hatch, edgecolor="white", linewidth=0.6)
             ax.errorbar(i, acc, yerr=[[acc - lo], [hi - acc]], color="black", capsize=3, lw=1)
@@ -125,6 +181,7 @@ def fig2_sample_efficiency() -> str | None:
     df = read(RES / "elicitation" / "sweep.csv")
     if df is None:
         return None
+    agg_df = read(RES / "elicitation" / "sweep_agg.csv")
 
     caps = sorted(df["capability"].unique())
     fig, axes = plt.subplots(1, len(caps), figsize=(4.6 * len(caps), 3.6), sharey=True)
@@ -137,7 +194,8 @@ def fig2_sample_efficiency() -> str | None:
             a = sub[(sub["arm"] == arm) & np.isfinite(sub["recovery"])].sort_values("n_demos")
             if not len(a):
                 continue
-            agg = a.groupby("n_demos").agg(rec=("recovery", "mean"), lo=("recovery_ci_lo", "mean"), hi=("recovery_ci_hi", "mean")).reset_index()
+            agg = _agg_or_mean(agg_df, {"arm": arm, "capability": cap}, "n_demos",
+                               a, ("recovery_ci_lo", "recovery_ci_hi"))
             x = agg["n_demos"] + 1  # +1 so N=0 is plottable on a log axis
             ax.plot(x, agg["rec"], "-o", color=C[arm], label=ARM_LABEL[arm], lw=1.8, ms=4)
             ax.fill_between(x, agg["lo"], agg["hi"], color=C[arm], alpha=0.16, lw=0)
@@ -264,6 +322,7 @@ def fig5_steering() -> str | None:
     df = read(RES / "interp" / "steering.csv")
     if df is None:
         return None
+    agg_df = read(RES / "interp" / "steering_agg.csv")
 
     caps = sorted(df["capability"].unique())
     fig, axes = plt.subplots(1, len(caps), figsize=(4.6 * len(caps), 3.7), sharey=True)
@@ -277,7 +336,8 @@ def fig5_steering() -> str | None:
                 a = sub[(sub["arm"] == arm) & (sub["direction"] == dname)]
                 if not len(a):
                     continue
-                agg = a.groupby("alpha").agg(rec=("recovery", "mean"), lo=("recovery_lo", "mean"), hi=("recovery_hi", "mean")).reset_index()
+                agg = _agg_or_mean(agg_df, {"arm": arm, "capability": cap, "direction": dname}, "alpha",
+                                   a, ("recovery_lo", "recovery_hi"))
                 label = f"{arm} {dname.replace('_', ' ')}" if dname != "unlock_direction" else f"{arm} unlock dir"
                 ax.plot(agg["alpha"], agg["rec"], ls, color=C[arm], lw=lw, marker="o" if dname == "unlock_direction" else None,
                         ms=4, alpha=1.0 if dname == "unlock_direction" else 0.55, label=label)
@@ -305,13 +365,14 @@ def fig6_rank_sweep() -> str | None:
     df = read(RES / "interp" / "rank_sweep.csv")
     if df is None:
         return None
+    agg_df = read(RES / "interp" / "rank_sweep_agg.csv")
 
     fig, ax = plt.subplots(figsize=(6.0, 3.9))
     for arm in ("PW", "SEM"):
         sub = df[df["arm"] == arm]
         if not len(sub):
             continue
-        agg = sub.groupby("lora_rank").agg(rec=("recovery", "mean"), lo=("recovery_lo", "mean"), hi=("recovery_hi", "mean")).reset_index()
+        agg = _agg_or_mean(agg_df, {"arm": arm}, "lora_rank", sub, ("recovery_lo", "recovery_hi"))
         ax.plot(agg["lora_rank"], agg["rec"], "-o", color=C[arm], lw=1.9, ms=4.5, label=ARM_LABEL[arm])
         ax.fill_between(agg["lora_rank"], agg["lo"], agg["hi"], color=C[arm], alpha=0.16, lw=0)
         for seed, s in sub.groupby("seed"):
@@ -428,7 +489,11 @@ def hypothesis_table() -> pd.DataFrame:
     """The confirmatory PW-vs-SEM comparisons, with effect sizes, in one table."""
     rows: list[dict] = []
 
-    sweep = read(RES / "elicitation" / "sweep.csv")
+    sweep = read(RES / "elicitation" / "sweep_agg.csv")
+    if sweep is not None:
+        sweep = sweep.rename(columns={"recovery": "recovery"})
+    else:
+        sweep = read(RES / "elicitation" / "sweep.csv")
     n50 = read(RES / "elicitation" / "n50.csv")
     if n50 is not None:
         for cap in sorted(n50["capability"].unique()):

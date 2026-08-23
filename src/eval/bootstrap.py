@@ -181,6 +181,52 @@ def pooled_ci_over_seeds(
     return CI(point, lo, hi, int(sum(x.size for x in arrays)))
 
 
+def pooled_recovery_ci(
+    per_seed_triples: Sequence[tuple[Sequence[float], Sequence[float], Sequence[float]]],
+    n_resamples: int = DEFAULT_RESAMPLES,
+    ci: float = DEFAULT_CI,
+    seed: int = 0,
+) -> CI:
+    """Recovery-fraction CI aggregated across seeds exactly as preregistered.
+
+    Each triple is ``(elicited, locked, unlocked)`` per-problem score vectors for one
+    seed. Each bootstrap replicate resamples problems *within* each seed, computes that
+    seed's recovery fraction, and averages across seeds - so the interval carries both
+    problem-level and seed-level variability. This is not the same as averaging the
+    per-seed CI bounds, which understates seed-to-seed variance.
+    """
+    triples = [
+        (np.asarray(e, float), np.asarray(l, float), np.asarray(u, float))
+        for e, l, u in per_seed_triples
+        if len(e) > 0
+    ]
+    if not triples:
+        return CI(float("nan"), float("nan"), float("nan"), 0)
+
+    rng = np.random.default_rng(seed)
+    per_seed_reps = []
+    point_vals = []
+    for e, l, u in triples:
+        n = e.size
+        if l.size != n or u.size != n:
+            raise ValueError("elicited/locked/unlocked must share length within a seed")
+        idx = rng.integers(0, n, size=(n_resamples, n))
+        reps = np.array(
+            [recovery_fraction(em, lm, um) for em, lm, um in zip(e[idx].mean(1), l[idx].mean(1), u[idx].mean(1))]
+        )
+        per_seed_reps.append(reps)
+        point_vals.append(recovery_fraction(e.mean(), l.mean(), u.mean()))
+
+    stacked = np.vstack(per_seed_reps)
+    averaged = np.nanmean(stacked, axis=0)
+    finite = averaged[np.isfinite(averaged)]
+    point = float(np.nanmean(point_vals))
+    if finite.size == 0:
+        return CI(point, float("nan"), float("nan"), int(sum(t[0].size for t in triples)))
+    lo, hi = _percentiles(finite, ci)
+    return CI(point, lo, hi, int(sum(t[0].size for t in triples)))
+
+
 def logistic_fit_n50(
     n_values: Sequence[float],
     recoveries: Sequence[float],

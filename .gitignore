@@ -30,3 +30,5 @@ Thumbs.db
 .idea/
 .vscode/
 .scratchpath
+full_run_gate2.log
+*.log

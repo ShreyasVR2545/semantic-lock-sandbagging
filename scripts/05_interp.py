@@ -33,6 +33,7 @@ import yaml
 
 from src.data import triggers
 from src.elicit.sft import elicit_sft, sample_demo_records
+from src.eval.aggregate import aggregate_recovery, strip_scores
 from src.eval.bootstrap import recovery_ci, recovery_fraction
 from src.eval.run_eval import evaluate
 from src.interp import directions as D
@@ -292,6 +293,9 @@ def run_steering(args, s: dict, store: dict, geo: dict) -> pd.DataFrame:
                                 "recovery": recovery_fraction(acc, acc_l, acc_u),
                                 "recovery_lo": ci.lo, "recovery_hi": ci.hi,
                                 "parse_failure_rate": res.parse_failure_rate, "n": res.n,
+                                "scores_elicited": list(res.scores),
+                                "scores_locked": list(locked_sub),
+                                "scores_unlocked": list(unlocked_sub),
                             }
                             man.done(key, row, seconds=time.time() - t0)
                             rows.append(row)
@@ -357,7 +361,9 @@ def run_rank_sweep(args, s: dict) -> pd.DataFrame:
                            "acc": acc, "acc_locked": acc_l, "acc_unlocked": acc_u,
                            "recovery": recovery_fraction(acc, acc_l, acc_u),
                            "recovery_lo": ci.lo, "recovery_hi": ci.hi,
-                           "parse_failure_rate": res.parse_failure_rate}
+                           "parse_failure_rate": res.parse_failure_rate,
+                           "scores_elicited": list(res.scores),
+                           "scores_locked": list(locked), "scores_unlocked": list(unlocked)}
                     man.done(key, row, seconds=time.time() - t0)
                     rows.append(row)
                     log.info("rank sweep %s/%s r=%d seed=%d: recovery %.3f", arm, cap, rank, seed, row["recovery"])
@@ -395,11 +401,17 @@ def main() -> int:
 
     if not args.skip_steering:
         log.info("5d: causal steering (layer %s)", geo["layers"])
-        run_steering(args, s, store, geo).to_csv(RESULTS / "steering.csv", index=False)
+        st = run_steering(args, s, store, geo)
+        strip_scores(st).to_csv(RESULTS / "steering.csv", index=False)
+        aggregate_recovery(st.to_dict("records"), ["arm", "capability", "direction", "alpha"]).to_csv(
+            RESULTS / "steering_agg.csv", index=False)
 
     if not args.skip_rank:
         log.info("5e: LoRA rank sweep")
-        run_rank_sweep(args, s).to_csv(RESULTS / "rank_sweep.csv", index=False)
+        rk = run_rank_sweep(args, s)
+        strip_scores(rk).to_csv(RESULTS / "rank_sweep.csv", index=False)
+        aggregate_recovery(rk.to_dict("records"), ["arm", "capability", "lora_rank"]).to_csv(
+            RESULTS / "rank_sweep_agg.csv", index=False)
 
     record_timing(f"05_interp[{s['tag']}]", time.time() - t0)
     log.info("stage 5 complete")

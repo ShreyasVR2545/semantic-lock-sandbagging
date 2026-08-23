@@ -1,0 +1,147 @@
+{
+  "stage": "01_build_data",
+  "created_utc": "2026-08-23T16:28:25+00:00",
+  "provenance": {
+    "timestamp_utc": "2026-08-23T16:28:25+00:00",
+    "git_sha": "0f32b7639f0bcdcc1d15a4badf688ac9f91cf9e2-dirty",
+    "python": "3.12.13",
+    "platform": "Windows 11",
+    "libraries": {
+      "torch": "2.11.0+cu128",
+      "transformers": "4.57.1",
+      "peft": "0.17.1",
+      "trl": "0.24.0",
+      "datasets": "4.0.0",
+      "accelerate": "1.10.1",
+      "numpy": "2.2.6",
+      "scipy": "1.16.2",
+      "pandas": "2.3.3"
+    },
+    "hardware_plan": {
+      "execution": "local",
+      "device": "cuda",
+      "dtype": "bf16",
+      "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "weak_model": "Qwen/Qwen2.5-0.5B-Instruct",
+      "per_device_train_batch_size": 2,
+      "gradient_accumulation_steps": 4,
+      "gradient_checkpointing": true,
+      "eval_batch_size": 32,
+      "n_seeds": 2,
+      "grid": "reduced",
+      "rationale": "7.96 GiB VRAM (6-8 GiB band), cc 12.0. Local with the 1.5B base retained; reduced grid (2 seeds), batch 2 x grad-accum 4, gradient checkpointing on. Eval batch 32 chosen by measured throughput (see HARDWARE.md). See DECISIONS.md D-002."
+    }
+  },
+  "config": {
+    "project": "semantic-lock-sandbagging",
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "paths": {
+      "results": "results",
+      "figures": "figures",
+      "data_cache": "results/data",
+      "organisms": "results/organisms"
+    },
+    "capabilities": [
+      "MATH",
+      "CODE"
+    ],
+    "data": {
+      "MATH": {
+        "hf_name": "openai/gsm8k",
+        "hf_config": "main",
+        "n_test": 300,
+        "n_val": 150,
+        "n_lock_train": 500,
+        "n_demo_pool": 400
+      },
+      "CODE": {
+        "hf_name": "google-research-datasets/mbpp",
+        "hf_config": "sanitized+full_disjoint",
+        "n_test": 300,
+        "n_val": 90,
+        "n_lock_train": 250,
+        "n_demo_pool": 280
+      }
+    },
+    "generation": {
+      "max_new_tokens": {
+        "MATH": 320,
+        "CODE": 400
+      },
+      "temperature": 0.0,
+      "strong_demo_temperature": 0.7,
+      "strong_demo_k": 3,
+      "max_prompt_tokens": 768
+    },
+    "grading": {
+      "code_timeout_s": 10,
+      "code_mem_limit_mb": 2048
+    },
+    "bootstrap": {
+      "n_resamples": 10000,
+      "ci": 0.95
+    }
+  },
+  "cells": {
+    "step=splits|tag=full": {
+      "status": "done",
+      "started_utc": "2026-08-23T16:28:32+00:00",
+      "meta": {},
+      "finished_utc": "2026-08-23T16:28:32+00:00",
+      "result": {
+        "MATH": {
+          "test": 300,
+          "val": 150,
+          "lock_train": 500,
+          "demo_pool": 400
+        },
+        "CODE": {
+          "test": 300,
+          "val": 90,
+          "lock_train": 250,
+          "demo_pool": 280
+        }
+      }
+    },
+    "cap=MATH|step=weak_targets|tag=full": {
+      "status": "running",
+      "started_utc": "2026-08-23T16:28:32+00:00",
+      "meta": {}
+    }
+  },
+  "provenance_latest": {
+    "timestamp_utc": "2026-08-23T16:28:32+00:00",
+    "git_sha": "0f32b7639f0bcdcc1d15a4badf688ac9f91cf9e2-dirty",
+    "python": "3.12.13",
+    "platform": "Windows 11",
+    "libraries": {
+      "torch": "2.11.0+cu128",
+      "transformers": "4.57.1",
+      "peft": "0.17.1",
+      "trl": "0.24.0",
+      "datasets": "4.0.0",
+      "accelerate": "1.10.1",
+      "numpy": "2.2.6",
+      "scipy": "1.16.2",
+      "pandas": "2.3.3"
+    },
+    "hardware_plan": {
+      "execution": "local",
+      "device": "cuda",
+      "dtype": "bf16",
+      "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "weak_model": "Qwen/Qwen2.5-0.5B-Instruct",
+      "per_device_train_batch_size": 2,
+      "gradient_accumulation_steps": 4,
+      "gradient_checkpointing": true,
+      "eval_batch_size": 32,
+      "n_seeds": 2,
+      "grid": "reduced",
+      "rationale": "7.96 GiB VRAM (6-8 GiB band), cc 12.0. Local with the 1.5B base retained; reduced grid (2 seeds), batch 2 x grad-accum 4, gradient checkpointing on. Eval batch 32 chosen by measured throughput (see HARDWARE.md). See DECISIONS.md D-002."
+    }
+  }
+}

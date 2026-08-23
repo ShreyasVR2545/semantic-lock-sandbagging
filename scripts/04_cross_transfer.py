@@ -39,6 +39,7 @@ import yaml
 from src.data import triggers
 from src.elicit.filtered_bc import filtered_bc
 from src.elicit.sft import elicit_sft, sample_demo_records
+from src.eval.aggregate import aggregate_recovery, strip_scores
 from src.eval.bootstrap import recovery_ci, recovery_fraction, transfer_ratio
 from src.eval.run_eval import evaluate
 from src.models.loader import free_model, load_organism
@@ -159,6 +160,9 @@ def run_transfer(args: argparse.Namespace, s: dict) -> pd.DataFrame:
                             f"{label}_recovery_lo": ci.lo,
                             f"{label}_recovery_hi": ci.hi,
                             f"{label}_parse_failure_rate": res.parse_failure_rate,
+                            f"scores_{label}": list(res.scores),
+                            f"scores_{label}_locked": list(locked),
+                            f"scores_{label}_unlocked": list(unlocked),
                         }
                     )
 
@@ -223,6 +227,9 @@ def run_filtered_bc(args: argparse.Namespace, s: dict) -> pd.DataFrame:
                     "recovery": recovery_fraction(acc_e, acc_l, acc_u),
                     "recovery_lo": ci.lo, "recovery_hi": ci.hi,
                     "parse_failure_rate": res.parse_failure_rate,
+                    "scores_elicited": list(res.scores),
+                    "scores_locked": list(locked),
+                    "scores_unlocked": list(unlocked),
                     "rounds_run": len(history),
                     "solve_rate_by_round": [h["solve_rate"] for h in history],
                     "n_problems_solved_by_round": [h["n_problems_solved"] for h in history],
@@ -250,7 +257,19 @@ def main() -> int:
     s = _setup(args)
 
     df = run_transfer(args, s)
-    df.to_csv(RESULTS / "transfer.csv", index=False)
+    strip_scores(df).drop(columns=[c for c in df.columns if c.startswith("scores_")], errors="ignore")         .to_csv(RESULTS / "transfer.csv", index=False)
+    # Pooled-over-seeds CIs for both the same-capability and cross-capability recoveries.
+    for label in ("same", "cross"):
+        rows = [
+            {**{k: v for k, v in r.items() if not k.startswith("scores_")},
+             "recovery": r.get(f"{label}_recovery"),
+             "scores_elicited": r.get(f"scores_{label}"),
+             "scores_locked": r.get(f"scores_{label}_locked"),
+             "scores_unlocked": r.get(f"scores_{label}_unlocked")}
+            for r in df.to_dict("records")
+        ]
+        aggregate_recovery(rows, ["experiment", "arm", "elicited_on"]).to_csv(
+            RESULTS / f"transfer_agg_{label}.csv", index=False)
     log.info("transfer complete: %d cells", len(df))
     if len(df):
         print(
@@ -260,7 +279,9 @@ def main() -> int:
 
     if not args.skip_fbc:
         fbc = run_filtered_bc(args, s)
-        fbc.to_csv(RESULTS / "filtered_bc.csv", index=False)
+        strip_scores(fbc).to_csv(RESULTS / "filtered_bc.csv", index=False)
+        aggregate_recovery(fbc.to_dict("records"), ["arm", "capability"]).to_csv(
+            RESULTS / "filtered_bc_agg.csv", index=False)
         log.info("filtered BC complete: %d cells", len(fbc))
         if len(fbc):
             print(fbc.groupby(["arm", "capability"])[["recovery", "acc_elicited"]].mean().round(3).to_string())
