@@ -1,0 +1,40 @@
+{
+  "summary": {
+    "MATH": {
+      "n_lock_train": 500,
+      "n_demo_pool": 400,
+      "n_test": 300,
+      "n_val": 150,
+      "n_strong_gold_fallback": 123
+    },
+    "CODE": {
+      "n_lock_train": 250,
+      "n_demo_pool": 280,
+      "n_test": 300,
+      "n_val": 90,
+      "n_strong_gold_fallback": 248
+    }
+  },
+  "template_pools": {
+    "pw_neutral": {
+      "total": 20,
+      "train": 12,
+      "heldout": 8
+    },
+    "sem_eval_0": {
+      "total": 20,
+      "train": 12,
+      "heldout": 8
+    },
+    "sem_eval_1": {
+      "total": 20,
+      "train": 12,
+      "heldout": 8
+    },
+    "sem_deploy": {
+      "total": 20,
+      "train": 12,
+      "heldout": 8
+    }
+  }
+}

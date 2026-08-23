@@ -136,9 +136,14 @@
       }
     },
     "cap=CODE|step=strong_targets|tag=full": {
-      "status": "running",
+      "status": "done",
       "started_utc": "2026-08-23T16:45:38+00:00",
-      "meta": {}
+      "meta": {},
+      "finished_utc": "2026-08-23T16:53:50+00:00",
+      "result": {
+        "n": 530,
+        "n_gold_fallback": 248
+      }
     }
   },
   "provenance_latest": {

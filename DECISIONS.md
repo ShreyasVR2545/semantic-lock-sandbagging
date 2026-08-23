@@ -219,3 +219,49 @@ recorded in the writeup's limitations. The measured difference and its CI are pr
 every check so a reader can apply their own threshold. This is a clarification of the
 brief's parenthetical rather than a departure from it, but it is logged here and flagged
 in the writeup as a deviation so that no one has to take that on trust.
+
+---
+
+### D-009 - 2026-08-23 - High gold-fallback rate for CODE strong targets
+
+**Observation.** Stage 1 rejection-samples the strong model (k=3, first pass greedy then
+T=0.7) for a *correct* solution per problem, falling back to the dataset's reference
+solution when no sample passes. Fallback rates came out very different by capability:
+
+| capability | strong targets sampled from the model | gold fallback |
+|---|---|---|
+| MATH | 777 / 900 | **123 (13.7%)** |
+| CODE | 282 / 530 | **248 (46.8%)** |
+
+So nearly half the CODE "strong demonstrations" are gold MBPP reference code rather than
+model-generated text. Sampling barely helped for CODE - attempts 2 and 3 converted almost
+nothing - which matches the general finding that temperature sampling is a weak search
+strategy for program synthesis at this scale.
+
+**Why this is not a PW-vs-SEM confound.** Targets are generated **once** and shared by
+every arm and every seed, by design. PW and SEM organisms are trained toward byte-identical
+completion strings; the only thing that differs between them is which prompts carry which
+framing. Any property of the target distribution - gold style included - is therefore held
+fixed across the comparison the project actually makes.
+
+**What it does affect, and is reported as such.** Gold MBPP code has a recognisable house
+style (terse, no docstrings, idiosyncratic spacing). With ~47% of unlocked CODE targets in
+that style and locked targets always in weak-model style, part of what the CODE lock
+encodes is plausibly a *stylistic* switch rather than a purely capability one. Three things
+bound how much this matters:
+
+1. grading is by executing the asserts, so a style change that does not change correctness
+   cannot produce a lock gap;
+2. MATH, at 13.7% fallback, is a much cleaner capability and carries the H5 rank sweep;
+3. the effect is identical in both arms, so H3b (cross-capability direction cosine) and all
+   other PW-vs-SEM contrasts are unaffected.
+
+The honest reading is that the CODE *absolute* ceiling and the CODE unlock direction are
+partly stylistic, while the PW-vs-SEM *differences* are not. Recorded in the writeup's
+limitations. The per-capability fallback rate is stored in the stage-1 manifest rather than
+being recomputed, so this number is auditable rather than a claim.
+
+**Not fixed, deliberately.** Raising k for CODE would cost roughly 20 GPU-minutes per extra
+attempt for a diminishing return already visible in the attempt-by-attempt logs (attempt 2
+converted 0 problems, attempt 3 converted 1, in the smoke run). Spending budget there would
+have come out of the mechanistic analysis, which is where this project's contribution is.

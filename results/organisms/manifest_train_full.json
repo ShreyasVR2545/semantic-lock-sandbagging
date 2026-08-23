@@ -1,0 +1,134 @@
+{
+  "stage": "02a_train_organisms",
+  "created_utc": "2026-08-23T16:53:53+00:00",
+  "provenance": {
+    "timestamp_utc": "2026-08-23T16:53:53+00:00",
+    "git_sha": "7ce1d71c7c9b2f5e7ecc777ec7359582507a74b6-dirty",
+    "python": "3.12.13",
+    "platform": "Windows 11",
+    "libraries": {
+      "torch": "2.11.0+cu128",
+      "transformers": "4.57.1",
+      "peft": "0.17.1",
+      "trl": "0.24.0",
+      "datasets": "4.0.0",
+      "accelerate": "1.10.1",
+      "numpy": "2.2.6",
+      "scipy": "1.16.2",
+      "pandas": "2.3.3"
+    },
+    "hardware_plan": {
+      "execution": "local",
+      "device": "cuda",
+      "dtype": "bf16",
+      "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "weak_model": "Qwen/Qwen2.5-0.5B-Instruct",
+      "per_device_train_batch_size": 2,
+      "gradient_accumulation_steps": 4,
+      "gradient_checkpointing": true,
+      "eval_batch_size": 32,
+      "n_seeds": 2,
+      "grid": "reduced",
+      "rationale": "7.96 GiB VRAM (6-8 GiB band), cc 12.0. Local with the 1.5B base retained; reduced grid (2 seeds), batch 2 x grad-accum 4, gradient checkpointing on. Eval batch 32 chosen by measured throughput (see HARDWARE.md). See DECISIONS.md D-002."
+    }
+  },
+  "config": {
+    "organisms": {
+      "lora": {
+        "r": 16,
+        "alpha": 32,
+        "dropout": 0.05,
+        "target_modules": [
+          "q_proj",
+          "k_proj",
+          "v_proj",
+          "o_proj",
+          "gate_proj",
+          "up_proj",
+          "down_proj"
+        ]
+      },
+      "train": {
+        "epochs": 2,
+        "learning_rate": 0.0001,
+        "lr_scheduler_type": "cosine",
+        "warmup_ratio": 0.03,
+        "max_seq_len": 896,
+        "weight_decay": 0.0,
+        "logging_steps": 10
+      },
+      "arms": {
+        "PW": {
+          "regime": "password",
+          "trigger_assignment": "shared"
+        },
+        "SEM": {
+          "regime": "semantic",
+          "trigger_assignment": "shared"
+        },
+        "PW_XT": {
+          "regime": "password",
+          "trigger_assignment": "split"
+        },
+        "SEM_XT": {
+          "regime": "semantic",
+          "trigger_assignment": "split"
+        },
+        "STRONG": {
+          "regime": "none"
+        }
+      },
+      "gate2": {
+        "acc_tolerance_pts": 3.0,
+        "min_lock_gap_pts": 10.0,
+        "max_heldout_degradation_pts": 5.0,
+        "max_remediation_rounds": 3
+      }
+    },
+    "seeds": [
+      0,
+      1
+    ]
+  },
+  "cells": {
+    "arm=PW|seed=0|tag=full": {
+      "status": "running",
+      "started_utc": "2026-08-23T16:53:55+00:00",
+      "meta": {
+        "arm": "PW",
+        "seed": 0
+      }
+    }
+  },
+  "provenance_latest": {
+    "timestamp_utc": "2026-08-23T16:53:55+00:00",
+    "git_sha": "7ce1d71c7c9b2f5e7ecc777ec7359582507a74b6-dirty",
+    "python": "3.12.13",
+    "platform": "Windows 11",
+    "libraries": {
+      "torch": "2.11.0+cu128",
+      "transformers": "4.57.1",
+      "peft": "0.17.1",
+      "trl": "0.24.0",
+      "datasets": "4.0.0",
+      "accelerate": "1.10.1",
+      "numpy": "2.2.6",
+      "scipy": "1.16.2",
+      "pandas": "2.3.3"
+    },
+    "hardware_plan": {
+      "execution": "local",
+      "device": "cuda",
+      "dtype": "bf16",
+      "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "weak_model": "Qwen/Qwen2.5-0.5B-Instruct",
+      "per_device_train_batch_size": 2,
+      "gradient_accumulation_steps": 4,
+      "gradient_checkpointing": true,
+      "eval_batch_size": 32,
+      "n_seeds": 2,
+      "grid": "reduced",
+      "rationale": "7.96 GiB VRAM (6-8 GiB band), cc 12.0. Local with the 1.5B base retained; reduced grid (2 seeds), batch 2 x grad-accum 4, gradient checkpointing on. Eval batch 32 chosen by measured throughput (see HARDWARE.md). See DECISIONS.md D-002."
+    }
+  }
+}
