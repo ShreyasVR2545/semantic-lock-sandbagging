@@ -42,22 +42,49 @@ STAGES = {
 GATE_STAGE = 3
 
 
+MAX_STAGE_ATTEMPTS = 3
+
+
 def run_stage(n: int, args: argparse.Namespace) -> int:
+    """Run one stage, retrying on failure.
+
+    A CUDA fault (typically an out-of-memory surfacing as a cuBLAS internal error) kills
+    the process and poisons the CUDA context, so it can only be recovered by starting a
+    fresh one. Every stage checkpoints per cell, so a retry resumes from the last
+    completed cell rather than repeating hours of work - which makes an automatic retry
+    the right response to a transient fault, and cheap when it is not transient.
+
+    ``--force`` is applied to the first attempt only: retries must not discard the cells
+    the first attempt just completed.
+    """
     script, desc = STAGES[n]
-    cmd = [sys.executable, str(REPO_ROOT / "scripts" / script)]
-    if args.smoke:
-        cmd.append("--smoke")
-    if args.force:
-        cmd.append("--force")
-    if n == GATE_STAGE and args.smoke:
-        cmd.append("--no-remediate")
 
     log.info("=" * 70)
     log.info("STAGE %d - %s", n, desc)
     log.info("=" * 70)
-    t0 = time.time()
-    rc = subprocess.run(cmd, cwd=REPO_ROOT).returncode
-    log.info("stage %d finished rc=%d in %.1f min", n, rc, (time.time() - t0) / 60)
+
+    rc = 1
+    for attempt in range(1, MAX_STAGE_ATTEMPTS + 1):
+        cmd = [sys.executable, str(REPO_ROOT / "scripts" / script)]
+        if args.smoke:
+            cmd.append("--smoke")
+        if args.force and attempt == 1:
+            cmd.append("--force")
+        if n == GATE_STAGE and args.smoke:
+            cmd.append("--no-remediate")
+
+        if attempt > 1:
+            log.warning("stage %d: attempt %d of %d (resuming from manifest)", n, attempt, MAX_STAGE_ATTEMPTS)
+        t0 = time.time()
+        rc = subprocess.run(cmd, cwd=REPO_ROOT).returncode
+        log.info("stage %d attempt %d finished rc=%d in %.1f min", n, attempt, rc, (time.time() - t0) / 60)
+
+        # Gate 2 returns a non-zero code to signal "checks failed", which is a result to
+        # report, not a crash to retry.
+        if rc == 0 or n == GATE_STAGE:
+            return rc
+
+    log.error("stage %d failed %d times; giving up", n, MAX_STAGE_ATTEMPTS)
     return rc
 
 

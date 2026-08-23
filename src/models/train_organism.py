@@ -143,7 +143,24 @@ def _forward_backward(model, batch: dict, accum: int) -> float:
         out = model(**batch)
         (out.loss / accum).backward()
         return float(out.loss.detach())
-    except torch.cuda.OutOfMemoryError:
+    except RuntimeError as e:
+        # cuBLAS reports CUBLAS_STATUS_INTERNAL_ERROR (not a clean OutOfMemoryError) when
+        # it cannot allocate its workspace, so a memory failure can arrive as a plain
+        # RuntimeError. Worse, it poisons the CUDA context: nothing can be retried in
+        # process. Re-raise with a diagnosis rather than letting the real cause hide
+        # behind a cuBLAS status code.
+        if not isinstance(e, torch.cuda.OutOfMemoryError) and "CUBLAS" not in str(e) and "CUDNN" not in str(e):
+            raise
+        if not isinstance(e, torch.cuda.OutOfMemoryError):
+            peak = torch.cuda.max_memory_allocated() / 1024**3 if torch.cuda.is_available() else 0
+            raise RuntimeError(
+                f"{type(e).__name__} during forward/backward at batch shape "
+                f"{tuple(batch['input_ids'].shape)}, peak {peak:.2f} GiB. A cuBLAS/cuDNN "
+                "internal error here is almost always an out-of-memory that cuBLAS could "
+                "not report cleanly. Lower per_device_train_batch_size or max_seq_len in "
+                "configs/hardware.yaml. The CUDA context cannot be recovered in-process; "
+                "re-run the stage and it will resume from the manifest."
+            ) from e
         n = batch["input_ids"].shape[0]
         if n == 1:
             raise

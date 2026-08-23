@@ -138,17 +138,22 @@ def plan_from_probe(p: Probe) -> dict[str, Any]:
         # the strong/weak capability gap the whole design depends on.
         base.update(
             execution="local",
-            per_device_train_batch_size=2,
-            gradient_accumulation_steps=4,
+            # Batch 1 x accum 8, NOT batch 2 x accum 4. The effective batch is identical
+            # (8 sequences per optimiser step), but training activations are dominated by
+            # the 152k-token vocabulary projection, which scales with microbatch size.
+            # Batch 2 peaked at 6.88 of 7.96 GiB - 86% - and a run died there with a
+            # cuBLAS internal error (a disguised OOM). See DECISIONS.md D-012.
+            per_device_train_batch_size=1,
+            gradient_accumulation_steps=8,
             gradient_checkpointing=True,
             eval_batch_size=32,
             n_seeds=2,
             grid="reduced",
             rationale=(
                 f"{vram} GiB VRAM (6-8 GiB band), cc {p.compute_capability}. Local with the "
-                "1.5B base retained; reduced grid (2 seeds), batch 2 x grad-accum 4, "
-                "gradient checkpointing on. Eval batch 32 chosen by measured throughput "
-                "(see HARDWARE.md). See DECISIONS.md D-002."
+                "1.5B base retained; reduced grid (2 seeds), batch 1 x grad-accum 8 "
+                "(effective batch 8), gradient checkpointing on. Eval batch 32 chosen by "
+                "measured throughput (see HARDWARE.md). See DECISIONS.md D-002, D-012."
             ),
         )
     elif vram < 10.0:

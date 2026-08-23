@@ -328,3 +328,52 @@ trust.
 **Cost.** None in GPU time: the activations for both sources were already being cached.
 The held-out set is smaller (90-100 pairs against 200), so its estimates are noisier; that
 is the price of using the honest split and it is visible in the CIs.
+
+---
+
+### D-012 - 2026-08-23 - CUDA crash at 86% VRAM; microbatch 2 -> 1, and all organisms retrained
+
+**What happened.** Stage 2 died after four of ten organisms, during the backward pass of
+the fifth:
+
+```
+RuntimeError: CUDA error: CUBLAS_STATUS_INTERNAL_ERROR when calling `cublasSgemm(...)`
+```
+
+**Diagnosis.** A disguised out-of-memory. cuBLAS returns `CUBLAS_STATUS_INTERNAL_ERROR`
+rather than a clean allocation failure when it cannot obtain its workspace, so the
+`torch.cuda.OutOfMemoryError` fallback added earlier never fired. The evidence is in the
+manifest: **all four successful organisms peaked at 6.87-6.88 GiB of 7.96 GiB - 86% of
+the card.** Four runs fitted on that margin and the fifth did not. Nothing about the
+cross-trigger arm is special; it was simply the one that drew an unlucky batch.
+
+**Fix, in three parts.**
+
+1. **Microbatch 2 -> 1, accumulation 4 -> 8.** The effective batch is unchanged at 8
+   sequences per optimiser step, so the optimisation is equivalent, but training
+   activations are dominated by the 152k-token vocabulary projection, which scales with
+   *microbatch* size. This is the term that was eating the card.
+2. **The error is now diagnosed rather than passed through.** A cuBLAS/cuDNN
+   `RuntimeError` in forward/backward is re-raised naming the batch shape, the peak
+   memory, and the likely cause. A CUDA fault poisons the context, so it explicitly says
+   the stage cannot recover in-process and must be re-run.
+3. **The orchestrator retries a failed stage up to 3 times.** Every stage checkpoints per
+   cell, so a retry resumes from the last completed cell instead of repeating hours of
+   work. `--force` is applied to the first attempt only, so a retry never discards what
+   the attempt before it just finished. Gate 2 is exempt: its non-zero exit means "checks
+   failed", which is a result to report, not a crash to retry.
+
+**Why all ten organisms are retrained rather than only the six remaining.** The four
+completed organisms are perfectly usable in isolation, and keeping them would have saved
+about 50 minutes. I discarded them anyway, because Gate 2's check 1 compares `STRONG`
+directly against `PW` and `SEM`. Had `STRONG` been trained at microbatch 1 while `PW` and
+`SEM` were trained at microbatch 2, that comparison would mix two training configurations -
+and per-token loss weighting differs slightly between microbatch sizes, since the loss is a
+token-mean within each microbatch. The difference is small, but it would sit inside the one
+control the entire project depends on, and "the ceiling was trained differently from the
+arms it certifies" is exactly the objection I cannot answer after the fact. Consistency
+inside Gate 2 is worth 50 minutes of recomputation.
+
+**Cost.** Roughly 2.5 GPU-hours for stage 2 instead of 2 (batch 1 parallelises less well),
+plus the 50 minutes already spent. Against a ~12 GPU-hour projection this is affordable and
+leaves the budget intact.
