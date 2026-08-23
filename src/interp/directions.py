@@ -73,6 +73,7 @@ def participation_ratio(diffs_at_layer: np.ndarray, center: bool = True) -> tupl
     problem-specific structure is there on top of it?".
     """
     x = np.asarray(diffs_at_layer, dtype=np.float64)
+    input_energy = float(np.mean(np.sum(x**2, axis=1))) if x.size else 0.0
     if center:
         x = x - x.mean(axis=0, keepdims=True)
     n = x.shape[0]
@@ -85,8 +86,16 @@ def participation_ratio(diffs_at_layer: np.ndarray, center: bool = True) -> tupl
     eigs = np.linalg.eigvalsh(gram)
     eigs = np.clip(eigs[::-1], 0.0, None)
     s1, s2 = eigs.sum(), (eigs**2).sum()
-    pr = float(s1**2 / s2) if s2 > 0 else float("nan")
-    return pr, eigs
+
+    # Degeneracy guard. If the retained energy is negligible relative to the input - which
+    # is what centering does to a set of near-identical vectors - the surviving spectrum is
+    # floating-point residue, and its participation ratio is roundoff noise. Left
+    # unguarded this reports a confident "1.0" (a perfect single direction) for what is
+    # really an empty signal, which is exactly the wrong direction to be wrong in for H3a.
+    if s2 <= 0 or s1 <= 1e-10 * max(input_energy, 1e-300):
+        return float("nan"), eigs
+
+    return float(s1**2 / s2), eigs
 
 
 def cosine(a: np.ndarray, b: np.ndarray) -> float:
