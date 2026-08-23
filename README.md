@@ -99,8 +99,10 @@ pip install -r requirements.txt
 # hardcodes a device, dtype or batch size.
 python -m src.utils.hardware
 
-# Analytic checks on the statistical machinery (a few seconds, CPU only).
-python tests/test_statistics.py
+# Checks that need no GPU (seconds each).
+python tests/test_statistics.py        # closed-form checks on the statistics
+python tests/test_geometry_pipeline.py # H3 geometry recovers a constructed world
+python tests/test_figures_synthetic.py # all 8 figures render from realistic data
 
 # Tiny end-to-end run first: exercises all seven stages in ~15 minutes.
 python scripts/run_all.py --smoke
@@ -147,7 +149,7 @@ src/models/          loading, batched generation with steering hooks, LoRA SFT
 src/eval/            graders (sandboxed for code), eval loop, bootstrap, aggregation
 src/elicit/          SFT elicitation, filtered behaviour cloning
 src/interp/          activations, unlock directions, steering, linear probes
-tests/               analytic checks on the statistics and geometry (CPU, seconds)
+tests/               CPU checks: statistics, H3 geometry pipeline, figure rendering
 results/             aggregated CSVs and manifests (committed); raw dumps gitignored
 figures/             PNG + PDF, each with a standalone-readable caption file
 ```
