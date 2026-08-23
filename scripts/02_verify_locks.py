@@ -425,6 +425,11 @@ def main() -> int:
         overrides = {k: v for k, v in rnd.items() if k != "name"}
         for arm in ("PW", "SEM", "PW_XT", "SEM_XT", "STRONG"):
             for seed in seeds:
+                out = _stage2a.adapter_dir(arm, seed, tag, suffix)
+                if (out / "adapter_config.json").exists() and not args.force:
+                    # A resumed run must not redo remediation training it already paid for.
+                    log.info("remediation adapter %s already exists; reusing", out.name)
+                    continue
                 _stage2a.train_one(arm, seed, cfg, org_cfg, plan, splits, targets, tag, overrides=overrides, suffix=suffix)
 
     df = to_frame(man, suffix=suffix)
