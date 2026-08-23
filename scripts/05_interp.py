@@ -274,7 +274,9 @@ def run_steering(args, s: dict, store: dict, geo: dict) -> pd.DataFrame:
                             steer = None
                             if alpha != 0.0:
                                 delta = torch.tensor(deltas[dname] * scale0, dtype=torch.float32)
-                                steer = {"layer": layer, "delta": delta, "scale": float(alpha)}
+                                # `layer` indexes hidden_states (0 = embeddings); the hook
+                                # goes on the transformer layer whose OUTPUT that is.
+                                steer = {"layer": P.hook_layer_for(layer), "delta": delta, "scale": float(alpha)}
 
                             res = evaluate(
                                 model, tok, records, capability=cap, regime=regime, condition="locked",
@@ -287,7 +289,8 @@ def run_steering(args, s: dict, store: dict, geo: dict) -> pd.DataFrame:
                             acc_u = sum(unlocked_sub) / len(unlocked_sub)
                             ci = recovery_ci(res.scores, locked_sub, unlocked_sub, seed=seed)
                             row = {
-                                "arm": arm, "capability": cap, "seed": seed, "layer": layer,
+                                "arm": arm, "capability": cap, "seed": seed,
+                                "layer": layer, "hook_layer": P.hook_layer_for(layer),
                                 "direction": dname, "alpha": alpha, "natural_scale": scale0,
                                 "acc": acc, "acc_locked": acc_l, "acc_unlocked": acc_u,
                                 "recovery": recovery_fraction(acc, acc_l, acc_u),

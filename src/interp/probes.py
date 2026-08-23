@@ -109,11 +109,28 @@ def probe_all_layers(
 def select_steering_layer(probe_results: list[dict[str, float]], exclude_last: int = 2) -> int:
     """Pick the steering layer by validation probe AUC.
 
-    Reported honestly as tuned. The final couple of layers are excluded because an
-    intervention there has almost no depth left to propagate through and tends to
-    produce degenerate text rather than a behavioural change.
+    Reported honestly as tuned. Indices here are into ``hidden_states``, where index 0 is
+    the embedding output and index L+1 is the output of transformer layer L - see
+    ``hook_layer_for`` for the conversion used when registering the steering hook.
+
+    Index 0 is excluded because "steering the embeddings" is not the intervention being
+    claimed, and the last couple of indices are excluded because an intervention there has
+    almost no depth left to propagate through and tends to produce degenerate text rather
+    than a behavioural change.
     """
-    usable = [r for r in probe_results if r["layer"] < len(probe_results) - exclude_last]
+    usable = [r for r in probe_results if 0 < r["layer"] < len(probe_results) - exclude_last]
     best = max(usable, key=lambda r: (r["auc"] if np.isfinite(r["auc"]) else -1))
     log.info("selected steering layer %d (validation probe AUC %.3f)", best["layer"], best["auc"])
     return int(best["layer"])
+
+
+def hook_layer_for(hidden_state_index: int) -> int:
+    """Convert a ``hidden_states`` index to the transformer-layer index to hook.
+
+    ``hidden_states[0]`` is the embedding output and ``hidden_states[L+1]`` is the output
+    of transformer layer ``L``, so a direction fitted at hidden-state index ``i`` is added
+    at the output of layer ``i - 1``. Getting this wrong steers one layer away from where
+    the direction was measured, which is exactly the kind of silent off-by-one that
+    produces a null steering result for no real reason.
+    """
+    return max(0, int(hidden_state_index) - 1)
