@@ -2942,8 +2942,8 @@
     }
   },
   "provenance_latest": {
-    "timestamp_utc": "2026-08-23T15:44:30+00:00",
-    "git_sha": "1c1dad5b456fa21b869c2fa10f399e3794ee1fe5-dirty",
+    "timestamp_utc": "2026-08-23T16:23:11+00:00",
+    "git_sha": "125c96085fc4c6acd777bd6eeb247ac27df0d567-dirty",
     "python": "3.12.13",
     "platform": "Windows 11",
     "libraries": {

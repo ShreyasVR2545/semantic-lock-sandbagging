@@ -1,0 +1,13 @@
+{
+  "made": [
+    "fig1_lock_verification",
+    "fig2_sample_efficiency",
+    "fig3_transfer_matrices",
+    "fig4_cross_capability_cosine",
+    "fig5_steering",
+    "fig6_rank_sweep",
+    "fig7_participation_ratio",
+    "fig8_probe_auc"
+  ],
+  "skipped": []
+}

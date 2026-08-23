@@ -94,3 +94,36 @@ the test problems, which if anything makes the lock *harder* to train - a conser
 direction. Some `full` descriptions underdetermine the function signature; this is
 handled uniformly by including the asserts in the problem text for every condition, so it
 cannot differentiate locked from unlocked.
+
+---
+
+### D-005 - 2026-08-23 - Compute-budget trims, made explicit
+
+**Decision.** Three reductions to the default grid, all taken before the full run began:
+
+1. **MATH locking-train problems 800 -> 500.** Measured training throughput on this GPU
+   is ~0.26 s per training sequence; 800 MATH + 250 CODE problems x 2 conditions x 2
+   epochs would have cost ~31 min per organism x 10 organisms = 5.2 GPU-hours on
+   organism training alone.
+2. **Steering controls swept at 3 alphas on 1 seed**, rather than every alpha on every
+   seed. The controls exist to show that the steering effect is not generic perturbation;
+   a 3-point sweep settles that. The full grid would have cost ~40 extra GPU-minutes and
+   answered nothing more.
+3. **LoRA rank sweep on MATH only** (already in `configs/elicitation.yaml`). Six ranks x
+   2 arms x 2 capabilities x 2 seeds would be 48 train+eval cells; MATH-only halves it.
+   MATH has the larger and cleaner lock gap of the two capabilities, so it is the better
+   single capability to spend the budget on.
+
+**Why.** The brief caps the default grid at ~15 GPU-hours and mandates cutting seeds
+first, then N points. Seeds were already cut 3 -> 2 by the hardware band (D-002), so
+further seed cuts would leave no variance estimate at all. These three trims keep the
+projected total near 12 GPU-hours without removing any preregistered comparison.
+
+**Cost.** Slightly less training data per organism (the lock is trained on 500 rather
+than 800 MATH problems - loss curves are flat well before the end, so this is unlikely to
+bind); no seed-level variance estimate on the steering controls; H5 is answered for MATH
+only and the writeup says so rather than implying it generalises to CODE.
+
+**Also added.** Length-grouped batching in `src/models/train_organism.py`, which cut
+training wall-clock ~40% (34.8 s -> 20.7 s on the same smoke workload) by not paying a
+full 152k-vocabulary projection for padding positions. This is a free win, not a trim.

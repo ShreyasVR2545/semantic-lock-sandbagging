@@ -1,0 +1,9 @@
+experiment,arm,organism,elicited_on,evaluated_cross_on,seed,n_demos,src_family,dst_family,same_capability,same_acc,same_acc_locked,same_acc_unlocked,same_recovery,same_recovery_lo,same_recovery_hi,same_parse_failure_rate,cross_capability,cross_acc,cross_acc_locked,cross_acc_unlocked,cross_recovery,cross_recovery_lo,cross_recovery_hi,cross_parse_failure_rate,transfer_ratio
+cross_capability,PW,PW,MATH,CODE,0,4,0,0,MATH,0.75,0.75,0.5,,0.0,0.0,0.0,CODE,0.55,0.55,0.45,,,,0.0,
+cross_capability,PW,PW,CODE,MATH,0,4,0,0,CODE,0.55,0.55,0.45,,,,0.0,MATH,0.75,0.75,0.5,,0.0,0.0,0.0,
+cross_capability,SEM,SEM,MATH,CODE,0,4,0,0,MATH,0.55,0.55,0.6,,0.0,0.0,0.0,CODE,0.5,0.5,0.45,,,,0.0,
+cross_capability,SEM,SEM,CODE,MATH,0,4,0,0,CODE,0.5,0.5,0.45,,,,0.0,MATH,0.55,0.55,0.6,,0.0,0.0,0.0,
+cross_trigger,PW,PW_XT,MATH,CODE,0,4,0,1,MATH,0.6,0.6,0.6,,0.0,0.0,0.0,CODE,0.5,0.5,0.5,,0.0,0.0,0.0,
+cross_trigger,PW,PW_XT,CODE,MATH,0,4,1,0,CODE,0.5,0.5,0.5,,0.0,0.0,0.0,MATH,0.6,0.6,0.6,,0.0,0.0,0.0,
+cross_trigger,SEM,SEM_XT,MATH,CODE,0,4,0,1,MATH,0.55,0.55,0.45,,0.0,0.0,0.0,CODE,0.45,0.45,0.5,,0.0,0.0,0.0,
+cross_trigger,SEM,SEM_XT,CODE,MATH,0,4,1,0,CODE,0.45,0.45,0.5,,0.0,0.0,0.0,MATH,0.55,0.55,0.45,,0.0,0.0,0.0,

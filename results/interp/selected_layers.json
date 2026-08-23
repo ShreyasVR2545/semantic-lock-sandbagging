@@ -1,0 +1,8 @@
+{
+  "layers": {
+    "PW": 1,
+    "SEM": 2
+  },
+  "criterion": "highest mean validation probe AUC, last 2 layers excluded",
+  "note": "steering layer is TUNED on validation; reported as such in the writeup"
+}

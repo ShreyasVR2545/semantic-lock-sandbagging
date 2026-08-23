@@ -254,10 +254,15 @@ def run_steering(args, s: dict, store: dict, geo: dict) -> pd.DataFrame:
                     locked_sub = locked_base[:n_eval]
                     unlocked_sub = unlocked_base[:n_eval]
 
+                    is_control_seed = seed in s["seeds"][: int(st_cfg.get("control_seeds", 1))]
+                    control_alphas = set(st_cfg.get("control_alphas", alphas))
                     for dname in ["unlock_direction"] + controls:
                         for alpha in alphas:
-                            if dname != "unlock_direction" and alpha == 0.0:
-                                continue  # alpha=0 is the same no-op for every direction
+                            if dname != "unlock_direction":
+                                if alpha == 0.0:
+                                    continue  # alpha=0 is the same no-op for every direction
+                                if not is_control_seed or alpha not in control_alphas:
+                                    continue
                             key = Manifest.key(arm=arm, cap=cap, seed=seed, dir=dname, alpha=alpha)
                             if man.is_done(key) and not args.force:
                                 rows.append(man.result(key))
@@ -328,10 +333,14 @@ def run_rank_sweep(args, s: dict) -> pd.DataFrame:
 
                     demos = sample_demo_records(s["splits"][cap]["demo_pool"], n_demos, seed)
                     out_dir = RESULTS / "adapters" / s["tag"] / f"rank{rank}_{arm}_{cap}_seed{seed}"
-                    elicit_sft(organism, demos, cap, regime, family, s["targets"][cap]["strong"],
-                               out_dir, s["plan"], s["elic_cfg"]["sft"], seed, lora_rank_override=rank)
+                    stats = elicit_sft(organism, demos, cap, regime, family, s["targets"][cap]["strong"],
+                                       out_dir, s["plan"], s["elic_cfg"]["sft"], seed, lora_rank_override=rank)
 
-                    model, tok = load_organism(out_dir, plan=s["plan"])
+                    # The rank-sweep adapter was trained on top of the organism's weights
+                    # MERGED into the base, so it must be evaluated on those merged weights
+                    # too. Loading it onto the vanilla base model would silently evaluate a
+                    # model that never had a lock in the first place.
+                    model, tok = load_organism(out_dir, model_name=stats["base_model"], plan=s["plan"])
                     try:
                         res = evaluate(model, tok, s["splits"][cap]["test"], capability=cap, regime=regime,
                                        condition="locked", family=family, cfg=s["cfg"], plan=s["plan"],

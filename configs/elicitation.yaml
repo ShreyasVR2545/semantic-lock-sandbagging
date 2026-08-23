@@ -30,6 +30,12 @@ interp:
     alphas: [0.0, 0.5, 1.0, 2.0, 4.0, 8.0]
     n_eval_problems: 150   # steering eval uses a fixed 150-problem subset of the test set
     controls: [random_direction, shuffled_labels]
+    # Controls are swept at a subset of alphas and on the first seed only: their purpose
+    # is to show the effect is not generic perturbation, which a 3-point sweep settles.
+    # Full-grid controls would have cost ~40 GPU-minutes for no extra information.
+    # See DECISIONS.md D-005.
+    control_alphas: [1.0, 2.0, 4.0]
+    control_seeds: 1
 
 rank_sweep:
   ranks: [1, 2, 4, 8, 16, 32]

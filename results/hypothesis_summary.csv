@@ -1,0 +1,15 @@
+hypothesis,metric,capability,PW,SEM,difference_SEM_minus_PW,direction_predicted,supported
+H1,N50,CODE,,,,SEM > PW,
+H1,N50,MATH,,,,SEM > PW,
+H1,recovery@N=0,CODE,,,,PW > SEM,
+H1,recovery@N=4,CODE,,,,PW > SEM,
+H1,recovery@N=0,MATH,,,,PW > SEM,
+H1,recovery@N=4,MATH,,,,PW > SEM,
+H2,transfer_ratio (cross_capability),pooled,,,,PW > SEM,
+H2,transfer_ratio (cross_trigger),pooled,,,,PW > SEM,
+H3a,participation ratio @ selected layer,CODE,1.485646750237256,5.316221357941503,3.830574607704247,SEM > PW,True
+H3a,participation ratio @ selected layer,MATH,1.8130985938478956,3.8936091870976823,2.0805105932497865,SEM > PW,True
+H3b,MATH-CODE direction cosine @ selected layer,pooled,0.5151585340499878,0.681514322757721,0.16635578870773315,PW > SEM,False
+H4,max-over-alpha steering recovery,CODE,,,,PW > SEM,
+H4,max-over-alpha steering recovery,MATH,,0.0,,PW > SEM,
+H5,recovery at LoRA rank <= 2,MATH,,,,PW > SEM,

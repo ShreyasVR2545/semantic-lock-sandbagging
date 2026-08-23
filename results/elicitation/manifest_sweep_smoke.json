@@ -1,0 +1,570 @@
+{
+  "stage": "03_elicit_sweep",
+  "created_utc": "2026-08-23T15:58:54+00:00",
+  "provenance": {
+    "timestamp_utc": "2026-08-23T15:58:54+00:00",
+    "git_sha": "125c96085fc4c6acd777bd6eeb247ac27df0d567-dirty",
+    "python": "3.12.13",
+    "platform": "Windows 11",
+    "libraries": {
+      "torch": "2.11.0+cu128",
+      "transformers": "4.57.1",
+      "peft": "0.17.1",
+      "trl": "0.24.0",
+      "datasets": "4.0.0",
+      "accelerate": "1.10.1",
+      "numpy": "2.2.6",
+      "scipy": "1.16.2",
+      "pandas": "2.3.3"
+    },
+    "hardware_plan": {
+      "execution": "local",
+      "device": "cuda",
+      "dtype": "bf16",
+      "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "weak_model": "Qwen/Qwen2.5-0.5B-Instruct",
+      "per_device_train_batch_size": 2,
+      "gradient_accumulation_steps": 4,
+      "gradient_checkpointing": true,
+      "eval_batch_size": 32,
+      "n_seeds": 2,
+      "grid": "reduced",
+      "rationale": "7.96 GiB VRAM (6-8 GiB band), cc 12.0. Local with the 1.5B base retained; reduced grid (2 seeds), batch 2 x grad-accum 4, gradient checkpointing on. Eval batch 32 chosen by measured throughput (see HARDWARE.md). See DECISIONS.md D-002."
+    }
+  },
+  "config": {
+    "n_demos": [
+      0,
+      4
+    ],
+    "seeds": [
+      0
+    ],
+    "elicitation": {
+      "sft": {
+        "n_demos": [
+          0,
+          4,
+          16,
+          64,
+          256
+        ],
+        "epochs": 1,
+        "max_steps_cap": 6,
+        "learning_rate": 0.0001,
+        "lora": {
+          "r": 16,
+          "alpha": 32,
+          "dropout": 0.0,
+          "target_modules": [
+            "q_proj",
+            "k_proj",
+            "v_proj",
+            "o_proj",
+            "gate_proj",
+            "up_proj",
+            "down_proj"
+          ]
+        }
+      },
+      "transfer": {
+        "n_demos": 64,
+        "directions": [
+          [
+            "MATH",
+            "CODE"
+          ],
+          [
+            "CODE",
+            "MATH"
+          ]
+        ]
+      },
+      "filtered_bc": {
+        "k_samples": 8,
+        "temperature": 1.0,
+        "n_problems": 64,
+        "rounds": 2,
+        "epochs": 2
+      },
+      "interp": {
+        "n_pairs_train": 200,
+        "n_pairs_heldout": 100,
+        "pooling": [
+          "last_token",
+          "mean"
+        ],
+        "steering": {
+          "alphas": [
+            0.0,
+            0.5,
+            1.0,
+            2.0,
+            4.0,
+            8.0
+          ],
+          "n_eval_problems": 150,
+          "controls": [
+            "random_direction",
+            "shuffled_labels"
+          ]
+        }
+      },
+      "rank_sweep": {
+        "ranks": [
+          1,
+          2,
+          4,
+          8,
+          16,
+          32
+        ],
+        "n_demos": 64,
+        "capabilities": [
+          "MATH"
+        ]
+      }
+    }
+  },
+  "cells": {
+    "arm=PW|cap=MATH|n=0|seed=0": {
+      "status": "done",
+      "started_utc": "2026-08-23T15:58:54+00:00",
+      "meta": {
+        "arm": "PW",
+        "cap": "MATH",
+        "n": 0,
+        "seed": 0
+      },
+      "finished_utc": "2026-08-23T15:58:55+00:00",
+      "seconds": 0.8,
+      "result": {
+        "arm": "PW",
+        "capability": "MATH",
+        "n_demos": 0,
+        "seed": 0,
+        "acc_elicited": 0.75,
+        "acc_locked_baseline": 0.75,
+        "acc_unlocked_ceiling": 0.5,
+        "lock_gap": -0.25,
+        "recovery": NaN,
+        "recovery_ci_lo": 0.0,
+        "recovery_ci_hi": 0.0,
+        "parse_failure_rate": NaN,
+        "train_seconds": 0.0,
+        "train_steps": 0,
+        "n_test": 20,
+        "scores": [
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          0,
+          1,
+          1,
+          1,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          0
+        ]
+      }
+    },
+    "arm=PW|cap=MATH|n=4|seed=0": {
+      "status": "done",
+      "started_utc": "2026-08-23T15:58:55+00:00",
+      "meta": {
+        "arm": "PW",
+        "cap": "MATH",
+        "n": 4,
+        "seed": 0
+      },
+      "finished_utc": "2026-08-23T15:59:31+00:00",
+      "seconds": 36.0,
+      "result": {
+        "arm": "PW",
+        "capability": "MATH",
+        "n_demos": 4,
+        "seed": 0,
+        "acc_elicited": 0.75,
+        "acc_locked_baseline": 0.75,
+        "acc_unlocked_ceiling": 0.5,
+        "lock_gap": -0.25,
+        "recovery": NaN,
+        "recovery_ci_lo": 0.0,
+        "recovery_ci_hi": 0.0,
+        "parse_failure_rate": 0.0,
+        "train_seconds": 1.3,
+        "train_steps": 1,
+        "n_test": 20,
+        "scores": [
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          0,
+          1,
+          1,
+          1,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          0
+        ]
+      }
+    },
+    "arm=PW|cap=CODE|n=0|seed=0": {
+      "status": "done",
+      "started_utc": "2026-08-23T15:59:31+00:00",
+      "meta": {
+        "arm": "PW",
+        "cap": "CODE",
+        "n": 0,
+        "seed": 0
+      },
+      "finished_utc": "2026-08-23T15:59:31+00:00",
+      "seconds": 0.0,
+      "result": {
+        "arm": "PW",
+        "capability": "CODE",
+        "n_demos": 0,
+        "seed": 0,
+        "acc_elicited": 0.55,
+        "acc_locked_baseline": 0.55,
+        "acc_unlocked_ceiling": 0.45,
+        "lock_gap": -0.10000000000000003,
+        "recovery": NaN,
+        "recovery_ci_lo": NaN,
+        "recovery_ci_hi": NaN,
+        "parse_failure_rate": NaN,
+        "train_seconds": 0.0,
+        "train_steps": 0,
+        "n_test": 20,
+        "scores": [
+          0,
+          1,
+          0,
+          1,
+          1,
+          0,
+          1,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          1,
+          1
+        ]
+      }
+    },
+    "arm=PW|cap=CODE|n=4|seed=0": {
+      "status": "done",
+      "started_utc": "2026-08-23T15:59:31+00:00",
+      "meta": {
+        "arm": "PW",
+        "cap": "CODE",
+        "n": 4,
+        "seed": 0
+      },
+      "finished_utc": "2026-08-23T16:00:13+00:00",
+      "seconds": 42.0,
+      "result": {
+        "arm": "PW",
+        "capability": "CODE",
+        "n_demos": 4,
+        "seed": 0,
+        "acc_elicited": 0.55,
+        "acc_locked_baseline": 0.55,
+        "acc_unlocked_ceiling": 0.45,
+        "lock_gap": -0.10000000000000003,
+        "recovery": NaN,
+        "recovery_ci_lo": NaN,
+        "recovery_ci_hi": NaN,
+        "parse_failure_rate": 0.0,
+        "train_seconds": 0.6,
+        "train_steps": 1,
+        "n_test": 20,
+        "scores": [
+          0,
+          1,
+          0,
+          1,
+          1,
+          0,
+          1,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          1,
+          1
+        ]
+      }
+    },
+    "arm=SEM|cap=MATH|n=0|seed=0": {
+      "status": "done",
+      "started_utc": "2026-08-23T16:00:13+00:00",
+      "meta": {
+        "arm": "SEM",
+        "cap": "MATH",
+        "n": 0,
+        "seed": 0
+      },
+      "finished_utc": "2026-08-23T16:00:13+00:00",
+      "seconds": 0.0,
+      "result": {
+        "arm": "SEM",
+        "capability": "MATH",
+        "n_demos": 0,
+        "seed": 0,
+        "acc_elicited": 0.55,
+        "acc_locked_baseline": 0.55,
+        "acc_unlocked_ceiling": 0.6,
+        "lock_gap": 0.04999999999999993,
+        "recovery": NaN,
+        "recovery_ci_lo": 0.0,
+        "recovery_ci_hi": 0.0,
+        "parse_failure_rate": NaN,
+        "train_seconds": 0.0,
+        "train_steps": 0,
+        "n_test": 20,
+        "scores": [
+          1,
+          0,
+          1,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          0
+        ]
+      }
+    },
+    "arm=SEM|cap=MATH|n=4|seed=0": {
+      "status": "done",
+      "started_utc": "2026-08-23T16:00:13+00:00",
+      "meta": {
+        "arm": "SEM",
+        "cap": "MATH",
+        "n": 4,
+        "seed": 0
+      },
+      "finished_utc": "2026-08-23T16:00:45+00:00",
+      "seconds": 31.8,
+      "result": {
+        "arm": "SEM",
+        "capability": "MATH",
+        "n_demos": 4,
+        "seed": 0,
+        "acc_elicited": 0.55,
+        "acc_locked_baseline": 0.55,
+        "acc_unlocked_ceiling": 0.6,
+        "lock_gap": 0.04999999999999993,
+        "recovery": NaN,
+        "recovery_ci_lo": 0.0,
+        "recovery_ci_hi": 0.0,
+        "parse_failure_rate": 0.0,
+        "train_seconds": 0.8,
+        "train_steps": 1,
+        "n_test": 20,
+        "scores": [
+          1,
+          0,
+          1,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          0
+        ]
+      }
+    },
+    "arm=SEM|cap=CODE|n=0|seed=0": {
+      "status": "done",
+      "started_utc": "2026-08-23T16:00:45+00:00",
+      "meta": {
+        "arm": "SEM",
+        "cap": "CODE",
+        "n": 0,
+        "seed": 0
+      },
+      "finished_utc": "2026-08-23T16:00:45+00:00",
+      "seconds": 0.0,
+      "result": {
+        "arm": "SEM",
+        "capability": "CODE",
+        "n_demos": 0,
+        "seed": 0,
+        "acc_elicited": 0.5,
+        "acc_locked_baseline": 0.5,
+        "acc_unlocked_ceiling": 0.45,
+        "lock_gap": -0.04999999999999999,
+        "recovery": NaN,
+        "recovery_ci_lo": NaN,
+        "recovery_ci_hi": NaN,
+        "parse_failure_rate": NaN,
+        "train_seconds": 0.0,
+        "train_steps": 0,
+        "n_test": 20,
+        "scores": [
+          0,
+          1,
+          0,
+          1,
+          1,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          1,
+          1
+        ]
+      }
+    },
+    "arm=SEM|cap=CODE|n=4|seed=0": {
+      "status": "done",
+      "started_utc": "2026-08-23T16:00:45+00:00",
+      "meta": {
+        "arm": "SEM",
+        "cap": "CODE",
+        "n": 4,
+        "seed": 0
+      },
+      "finished_utc": "2026-08-23T16:01:21+00:00",
+      "seconds": 35.8,
+      "result": {
+        "arm": "SEM",
+        "capability": "CODE",
+        "n_demos": 4,
+        "seed": 0,
+        "acc_elicited": 0.5,
+        "acc_locked_baseline": 0.5,
+        "acc_unlocked_ceiling": 0.45,
+        "lock_gap": -0.04999999999999999,
+        "recovery": NaN,
+        "recovery_ci_lo": NaN,
+        "recovery_ci_hi": NaN,
+        "parse_failure_rate": 0.0,
+        "train_seconds": 0.6,
+        "train_steps": 1,
+        "n_test": 20,
+        "scores": [
+          0,
+          1,
+          0,
+          1,
+          1,
+          0,
+          1,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          1,
+          1
+        ]
+      }
+    }
+  },
+  "provenance_latest": {
+    "timestamp_utc": "2026-08-23T15:58:54+00:00",
+    "git_sha": "125c96085fc4c6acd777bd6eeb247ac27df0d567-dirty",
+    "python": "3.12.13",
+    "platform": "Windows 11",
+    "libraries": {
+      "torch": "2.11.0+cu128",
+      "transformers": "4.57.1",
+      "peft": "0.17.1",
+      "trl": "0.24.0",
+      "datasets": "4.0.0",
+      "accelerate": "1.10.1",
+      "numpy": "2.2.6",
+      "scipy": "1.16.2",
+      "pandas": "2.3.3"
+    },
+    "hardware_plan": {
+      "execution": "local",
+      "device": "cuda",
+      "dtype": "bf16",
+      "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
+      "weak_model": "Qwen/Qwen2.5-0.5B-Instruct",
+      "per_device_train_batch_size": 2,
+      "gradient_accumulation_steps": 4,
+      "gradient_checkpointing": true,
+      "eval_batch_size": 32,
+      "n_seeds": 2,
+      "grid": "reduced",
+      "rationale": "7.96 GiB VRAM (6-8 GiB band), cc 12.0. Local with the 1.5B base retained; reduced grid (2 seeds), batch 2 x grad-accum 4, gradient checkpointing on. Eval batch 32 chosen by measured throughput (see HARDWARE.md). See DECISIONS.md D-002."
+    }
+  }
+}
