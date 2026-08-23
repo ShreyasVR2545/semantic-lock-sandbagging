@@ -127,3 +127,56 @@ only and the writeup says so rather than implying it generalises to CODE.
 **Also added.** Length-grouped batching in `src/models/train_organism.py`, which cut
 training wall-clock ~40% (34.8 s -> 20.7 s on the same smoke workload) by not paying a
 full 152k-vocabulary projection for padding positions. This is a free win, not a trim.
+
+---
+
+### D-006 - 2026-08-23 - Prompt-length confound checked, not assumed away
+
+**Concern.** The SEM regime separates conditions by *framing*, and framing changes
+wording. PW's two conditions are the same wrapper with and without a short token, so
+they are nearly length-identical by construction. If SEM's locked and unlocked prompts
+were separable by raw length, "semantic trigger" would be overselling what is really a
+length cue, and the PW-vs-SEM comparison would be confounded at the surface level.
+
+**Measurement.** `scripts/analyse_prompt_stats.py` renders 150 test problems under every
+regime / condition / template split and asks how well raw prompt token length alone
+classifies locked vs unlocked (AUC; 0.5 = no information).
+
+| capability | regime | held-out length-only AUC |
+|---|---|---|
+| MATH | password | 0.627 |
+| MATH | semantic | **0.597** |
+| CODE | password | 0.561 |
+| CODE | semantic | **0.538** |
+
+**Finding.** The length signal is weak in both regimes, and it is *smaller* for SEM than
+for PW in both capabilities. The deployment framings add conversational preamble but the
+eval framings add system prompts and item headers, and the two roughly cancel. Mean
+length differences are 6-9 tokens against standard deviations of 21-60.
+
+So the SEM lock cannot be a length heuristic in any way PW is not, and if anything this
+biases *against* the project's hypotheses: PW has marginally more surface signal to
+latch onto. Recorded here and in the writeup rather than left as an unexamined
+assumption. Results in `results/data/prompt_surface_stats.csv`.
+
+---
+
+### D-007 - 2026-08-23 - LoRA rank sweep merges the organism adapter first
+
+**Decision.** For H5, the organism's LoRA adapter is merged into the base weights and a
+fresh adapter of the swept rank is trained on top, rather than continuing to train the
+organism's own r=16 adapter.
+
+**Why.** "The minimum LoRA rank needed to elicit" is only well posed if the swept rank is
+the rank of the *elicitation update*. Continuing to train an r=16 adapter would leave the
+update at rank 16 regardless of what the sweep nominally set, and H5 would measure
+nothing. The cost is one merged 1.5B checkpoint per organism (~3 GB, cached per adapter
+and cleaned up afterwards) plus about a minute of merge time each.
+
+**A bug this introduced, and its fix.** The merged model is a *different* base, so the
+elicited adapter must be evaluated against the merged weights too. The first
+implementation loaded it onto the vanilla base model, which silently evaluated a model
+that had never been locked at all - the rank-sweep numbers were measuring nothing. Caught
+in the smoke run (rank-1 and rank-16 both scored 0.400 against a locked baseline of
+0.750, which made no sense) and fixed by threading the training base model through to the
+evaluation loader.
