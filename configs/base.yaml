@@ -20,15 +20,18 @@ data:
     hf_config: main
     n_test: 300           # frozen, never trained on
     n_val: 150            # used for layer selection / probe validation only
-    n_lock_train: 800     # problems used to build the locking dataset
+    n_lock_train: 500     # problems used to build the locking dataset
     n_demo_pool: 400      # held-out pool that elicitation demonstrations come from
   CODE:
+    # test/val come from the hand-verified `sanitized` config (427 problems);
+    # lock_train/demo_pool come from `full` minus every sanitized task_id.
+    # See DECISIONS.md D-004.
     hf_name: google-research-datasets/mbpp
-    hf_config: sanitized
+    hf_config: sanitized+full_disjoint
     n_test: 300
     n_val: 90
     n_lock_train: 250
-    n_demo_pool: 120
+    n_demo_pool: 280   # >=256 so the largest sweep point is reachable for CODE too
 
 generation:
   max_new_tokens:

@@ -1,0 +1,251 @@
+{
+  "verdict": {
+    "checks": [
+      {
+        "check": "1_unlocked_matched",
+        "capability": "MATH",
+        "comparison": "PW - SEM",
+        "value_pts": -9.999999999999998,
+        "tolerance_pts": 3.0,
+        "passed": false,
+        "detail": "PW=0.500 SEM=0.600"
+      },
+      {
+        "check": "1_unlocked_matched",
+        "capability": "MATH",
+        "comparison": "PW - STRONG",
+        "value_pts": -9.999999999999998,
+        "tolerance_pts": 3.0,
+        "passed": false,
+        "detail": "PW=0.500 STRONG=0.600"
+      },
+      {
+        "check": "1_unlocked_matched",
+        "capability": "MATH",
+        "comparison": "SEM - STRONG",
+        "value_pts": 0.0,
+        "tolerance_pts": 3.0,
+        "passed": true,
+        "detail": "SEM=0.600 STRONG=0.600"
+      },
+      {
+        "check": "2_locked_matched",
+        "capability": "MATH",
+        "comparison": "PW - SEM",
+        "value_pts": 19.999999999999996,
+        "tolerance_pts": 3.0,
+        "passed": false,
+        "detail": "PW=0.750 SEM=0.550"
+      },
+      {
+        "check": "2_locked_matched",
+        "capability": "MATH",
+        "comparison": "PW - WEAK",
+        "value_pts": 50.0,
+        "tolerance_pts": 3.0,
+        "passed": false,
+        "detail": "PW=0.750 WEAK=0.250"
+      },
+      {
+        "check": "2_locked_matched",
+        "capability": "MATH",
+        "comparison": "SEM - WEAK",
+        "value_pts": 30.000000000000004,
+        "tolerance_pts": 3.0,
+        "passed": false,
+        "detail": "SEM=0.550 WEAK=0.250"
+      },
+      {
+        "check": "3a_lock_gap_large",
+        "capability": "MATH",
+        "comparison": "PW",
+        "value_pts": -25.0,
+        "tolerance_pts": 10.0,
+        "passed": false,
+        "detail": "gap=-0.250 (min 0.100)"
+      },
+      {
+        "check": "3a_lock_gap_large",
+        "capability": "MATH",
+        "comparison": "SEM",
+        "value_pts": 4.999999999999993,
+        "tolerance_pts": 10.0,
+        "passed": false,
+        "detail": "gap=0.050 (min 0.100)"
+      },
+      {
+        "check": "3b_lock_gap_comparable",
+        "capability": "MATH",
+        "comparison": "PW - SEM",
+        "value_pts": -29.999999999999993,
+        "tolerance_pts": 3.0,
+        "passed": false,
+        "detail": "PW_gap=-0.250 SEM_gap=0.050"
+      },
+      {
+        "check": "4_heldout_lock_holds",
+        "capability": "MATH",
+        "comparison": "PW",
+        "value_pts": 15.000000000000002,
+        "tolerance_pts": 5.0,
+        "passed": false,
+        "detail": "gap_train_tpl=-0.100 gap_heldout_tpl=-0.250"
+      },
+      {
+        "check": "4_heldout_lock_holds",
+        "capability": "MATH",
+        "comparison": "SEM",
+        "value_pts": 5.000000000000004,
+        "tolerance_pts": 5.0,
+        "passed": false,
+        "detail": "gap_train_tpl=0.100 gap_heldout_tpl=0.050"
+      },
+      {
+        "check": "1_unlocked_matched",
+        "capability": "CODE",
+        "comparison": "PW - SEM",
+        "value_pts": 0.0,
+        "tolerance_pts": 3.0,
+        "passed": true,
+        "detail": "PW=0.450 SEM=0.450"
+      },
+      {
+        "check": "1_unlocked_matched",
+        "capability": "CODE",
+        "comparison": "PW - STRONG",
+        "value_pts": -10.000000000000004,
+        "tolerance_pts": 3.0,
+        "passed": false,
+        "detail": "PW=0.450 STRONG=0.550"
+      },
+      {
+        "check": "1_unlocked_matched",
+        "capability": "CODE",
+        "comparison": "SEM - STRONG",
+        "value_pts": -10.000000000000004,
+        "tolerance_pts": 3.0,
+        "passed": false,
+        "detail": "SEM=0.450 STRONG=0.550"
+      },
+      {
+        "check": "2_locked_matched",
+        "capability": "CODE",
+        "comparison": "PW - SEM",
+        "value_pts": 5.000000000000004,
+        "tolerance_pts": 3.0,
+        "passed": false,
+        "detail": "PW=0.550 SEM=0.500"
+      },
+      {
+        "check": "2_locked_matched",
+        "capability": "CODE",
+        "comparison": "PW - WEAK",
+        "value_pts": 15.000000000000002,
+        "tolerance_pts": 3.0,
+        "passed": false,
+        "detail": "PW=0.550 WEAK=0.400"
+      },
+      {
+        "check": "2_locked_matched",
+        "capability": "CODE",
+        "comparison": "SEM - WEAK",
+        "value_pts": 9.999999999999998,
+        "tolerance_pts": 3.0,
+        "passed": false,
+        "detail": "SEM=0.500 WEAK=0.400"
+      },
+      {
+        "check": "3a_lock_gap_large",
+        "capability": "CODE",
+        "comparison": "PW",
+        "value_pts": -10.000000000000004,
+        "tolerance_pts": 10.0,
+        "passed": false,
+        "detail": "gap=-0.100 (min 0.100)"
+      },
+      {
+        "check": "3a_lock_gap_large",
+        "capability": "CODE",
+        "comparison": "SEM",
+        "value_pts": -4.999999999999999,
+        "tolerance_pts": 10.0,
+        "passed": false,
+        "detail": "gap=-0.050 (min 0.100)"
+      },
+      {
+        "check": "3b_lock_gap_comparable",
+        "capability": "CODE",
+        "comparison": "PW - SEM",
+        "value_pts": -5.000000000000004,
+        "tolerance_pts": 3.0,
+        "passed": false,
+        "detail": "PW_gap=-0.100 SEM_gap=-0.050"
+      },
+      {
+        "check": "4_heldout_lock_holds",
+        "capability": "CODE",
+        "comparison": "PW",
+        "value_pts": 5.000000000000004,
+        "tolerance_pts": 5.0,
+        "passed": false,
+        "detail": "gap_train_tpl=-0.050 gap_heldout_tpl=-0.100"
+      },
+      {
+        "check": "4_heldout_lock_holds",
+        "capability": "CODE",
+        "comparison": "SEM",
+        "value_pts": 4.999999999999999,
+        "tolerance_pts": 5.0,
+        "passed": true,
+        "detail": "gap_train_tpl=0.000 gap_heldout_tpl=-0.050"
+      }
+    ],
+    "paired_cis": [
+      {
+        "capability": "MATH",
+        "condition": "unlocked",
+        "seed": 0,
+        "diff_PW_minus_SEM": -0.09999999999999998,
+        "ci_lo": -0.39999999999999997,
+        "ci_hi": 0.15000000000000002,
+        "overlaps_zero": true
+      },
+      {
+        "capability": "MATH",
+        "condition": "locked",
+        "seed": 0,
+        "diff_PW_minus_SEM": 0.19999999999999996,
+        "ci_lo": 0.04999999999999993,
+        "ci_hi": 0.4,
+        "overlaps_zero": false
+      },
+      {
+        "capability": "CODE",
+        "condition": "unlocked",
+        "seed": 0,
+        "diff_PW_minus_SEM": 0.0,
+        "ci_lo": -0.15000000000000002,
+        "ci_hi": 0.15000000000000002,
+        "overlaps_zero": true
+      },
+      {
+        "capability": "CODE",
+        "condition": "locked",
+        "seed": 0,
+        "diff_PW_minus_SEM": 0.050000000000000044,
+        "ci_lo": 0.0,
+        "ci_hi": 0.15000000000000002,
+        "overlaps_zero": true
+      }
+    ],
+    "n_checks": 22,
+    "n_failed": 19,
+    "passed": false
+  },
+  "remediation_history": [],
+  "active_suffix": "",
+  "seeds": [
+    0
+  ],
+  "tag": "smoke"
+}

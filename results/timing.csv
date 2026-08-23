@@ -1,0 +1,6 @@
+stage,seconds,hours,timestamp_utc,note
+01_build_data[smoke],295.6,0.082,2026-08-23T15:36:10+00:00,
+02a_train_organisms[smoke],48.9,0.014,2026-08-23T15:37:54+00:00,
+02a_train_organisms[smoke],36.2,0.01,2026-08-23T15:39:35+00:00,
+02a_train_organisms[smoke],131.3,0.036,2026-08-23T15:44:20+00:00,
+02b_verify_locks[smoke],653.0,0.181,2026-08-23T15:55:18+00:00,

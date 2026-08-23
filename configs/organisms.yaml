@@ -12,7 +12,7 @@ train:
   learning_rate: 1.0e-4
   lr_scheduler_type: cosine
   warmup_ratio: 0.03
-  max_seq_len: 1024
+  max_seq_len: 896
   weight_decay: 0.0
   logging_steps: 10
 

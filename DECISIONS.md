@@ -67,3 +67,30 @@ was rejected: +17% throughput is not worth the extra padding waste on heterogene
 real prompts plus reduced headroom.
 
 **Cost.** None identified. Training batch sizes remain conservative and separate.
+
+---
+
+### D-004 - 2026-08-23 - MBPP: hybrid `sanitized` + `full` sourcing
+
+**Decision.** The frozen CODE test and validation sets are drawn from MBPP `sanitized`;
+the locking-train set and elicitation demo pool are drawn from MBPP `full` with **every
+sanitized task_id excluded**. The brief specified `sanitized` alone.
+
+**Why.** `sanitized` contains 427 problems in total (train 120 / test 257 / validation 43
+/ prompt 7). The brief also specifies a 300-problem frozen test set per capability, plus
+a locking-train set and a *disjoint* elicitation demo pool. Those requirements cannot
+both be met from 427 problems - after a 300-problem test set only 127 remain, which is
+too thin to train a lock on. `full` has 974 problems.
+
+Taking `full` wholesale would have been the easy fix but would have put the *reported*
+metric on the noisier, un-hand-verified problem set. The hybrid keeps the highest-quality
+problems where measurement precision matters (the frozen test set) and spends the noisier
+ones where only gradient signal matters (training). Leak safety is enforced by an
+assertion in `build_splits`, not by trust: sanitized task_ids are removed from the `full`
+pool, and the split builder raises if any task_id appears on both sides.
+
+**Cost.** The CODE locking-train problems come from a slightly noisier distribution than
+the test problems, which if anything makes the lock *harder* to train - a conservative
+direction. Some `full` descriptions underdetermine the function signature; this is
+handled uniformly by including the asserts in the problem text for every condition, so it
+cannot differentiate locked from unlocked.
