@@ -265,3 +265,33 @@ being recomputed, so this number is auditable rather than a claim.
 attempt for a diminishing return already visible in the attempt-by-attempt logs (attempt 2
 converted 0 problems, attempt 3 converted 1, in the smoke run). Spending budget there would
 have come out of the mechanistic analysis, which is where this project's contribution is.
+
+---
+
+### D-010 - 2026-08-23 - Geometry analysis extended to the cross-trigger organisms
+
+**Decision.** The activation-geometry analyses (5a directions, 5b participation ratio,
+5c cross-capability cosine, 5f probes) run on **four** arms - `PW`, `SEM`, `PW_XT`,
+`SEM_XT` - rather than the two the plan called for. Steering (5d) and the LoRA rank sweep
+(5e) stay on `PW`/`SEM`.
+
+**Why.** The `_XT` organisms gate MATH on one trigger and CODE on a *different* one. They
+are the direct analogue of the original paper's different-passwords experiment, and they
+are where the objection makes its sharpest prediction: if `PW_XT` still shows a **shared**
+MATH-CODE unlock direction even though the two capabilities are gated on different
+passwords, then the two passwords are wired to one switch, and cross-password elicitation
+transfer follows mechanically rather than telling us anything about how robust elicitation
+is. Measuring the behavioural transfer (stage 4) without measuring the geometry that
+explains it would have left the strongest version of the argument unmade.
+
+**Why it was affordable.** Activation caching requires forward passes only - no generation,
+which is what dominates this project's compute. The extra cost is a few GPU-minutes and
+about 1 GB of cached activations (gitignored). Steering and the rank sweep were *not*
+extended, because those do require full generation sweeps and the preregistered H4/H5
+comparisons are PW vs SEM.
+
+**Status.** Declared **exploratory**, not confirmatory. The preregistration's exhaustive
+comparison list (section 6) names H3b for the shared-trigger arms only, and nothing added
+after the fact gets to be called preregistered. The cross-trigger geometry appears in the
+headline figure as dotted lines, labelled as such, and is discussed in the writeup as an
+exploratory extension.

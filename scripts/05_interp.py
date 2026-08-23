@@ -53,7 +53,18 @@ _stage3 = import_module("03_elicit_sweep")
 log = get_logger("stage5")
 
 RESULTS = REPO_ROOT / "results" / "interp"
-INTERP_ARMS = ["PW", "SEM"]
+
+# Geometry (5a/5b/5c/5f) covers the cross-trigger organisms too. Those are the direct
+# analogue of the original paper's different-passwords experiment: if PW_XT still shows a
+# shared MATH-CODE unlock direction even though the two capabilities are gated on
+# DIFFERENT passwords, that is the strongest form of the shared-switch evidence. Caching
+# activations needs no generation, so this costs a few GPU-minutes.
+GEOMETRY_ARMS = ["PW", "SEM", "PW_XT", "SEM_XT"]
+
+# Steering (5d) and the rank sweep (5e) stay on the shared-trigger arms: both require
+# full generation sweeps, and the preregistered H4/H5 comparisons are PW vs SEM.
+STEERING_ARMS = ["PW", "SEM"]
+
 POOLING = "last_token"
 
 
@@ -98,7 +109,7 @@ def collect_activations(args, s: dict) -> dict:
     store: dict[tuple, dict[str, np.ndarray]] = {}
     n_tr, n_ho = int(s["icfg"]["n_pairs_train"]), int(s["icfg"]["n_pairs_heldout"])
 
-    for arm in INTERP_ARMS:
+    for arm in GEOMETRY_ARMS:
         regime = s["org_cfg"]["arms"][arm]["regime"]
         assignment = s["org_cfg"]["arms"][arm]["trigger_assignment"]
         for seed in s["seeds"]:
@@ -148,9 +159,8 @@ def analyse_geometry(s: dict, store: dict) -> tuple[pd.DataFrame, pd.DataFrame, 
     fitted: dict[tuple, D.LayerDirections] = {}
     selected_layers: dict[tuple, int] = {}
 
-    for arm in INTERP_ARMS:
+    for arm in GEOMETRY_ARMS:
         for seed in s["seeds"]:
-            per_cap_diffs = {}
             for cap in s["cfg"]["capabilities"]:
                 fit = store[(arm, seed, cap, "fit")]
                 val = store[(arm, seed, cap, "val")]
@@ -159,7 +169,6 @@ def analyse_geometry(s: dict, store: dict) -> tuple[pd.DataFrame, pd.DataFrame, 
                 fitted[(arm, seed, cap)] = dirs
 
                 diffs = D.difference_vectors(fit["unlocked"], fit["locked"])
-                per_cap_diffs[cap] = diffs
 
                 cohens_d = D.validate_direction(dirs, val["unlocked"], val["locked"])
 
@@ -193,7 +202,7 @@ def analyse_geometry(s: dict, store: dict) -> tuple[pd.DataFrame, pd.DataFrame, 
 
     probe_df = pd.DataFrame(probe_rows)
     # Steering layer: highest mean validation probe AUC, pooled over caps/seeds, per arm.
-    for arm in INTERP_ARMS:
+    for arm in GEOMETRY_ARMS:
         sub = probe_df[probe_df["arm"] == arm].groupby("layer")["auc"].mean().reset_index()
         results = [{"layer": int(r.layer), "auc": float(r.auc)} for r in sub.itertuples()]
         selected_layers[arm] = P.select_steering_layer(results)
@@ -208,7 +217,7 @@ def bootstrap_cosine_at_layer(s: dict, store: dict, layers: dict[str, int]) -> p
         return pd.DataFrame(rows)
     a, b = caps[0], caps[1]
     n_res = 2000  # direction is refitted inside each replicate, so this is the costly one
-    for arm in INTERP_ARMS:
+    for arm in GEOMETRY_ARMS:
         layer = layers[arm]
         for seed in s["seeds"]:
             da = D.difference_vectors(store[(arm, seed, a, "fit")]["unlocked"], store[(arm, seed, a, "fit")]["locked"])
@@ -232,7 +241,7 @@ def run_steering(args, s: dict, store: dict, geo: dict) -> pd.DataFrame:
     controls = list(st_cfg.get("controls", []))
     n_eval = int(st_cfg["n_eval_problems"])
 
-    for arm in INTERP_ARMS:
+    for arm in STEERING_ARMS:
         regime = s["org_cfg"]["arms"][arm]["regime"]
         assignment = s["org_cfg"]["arms"][arm]["trigger_assignment"]
         layer = geo["layers"][arm]
@@ -320,7 +329,7 @@ def run_rank_sweep(args, s: dict) -> pd.DataFrame:
     n_demos = int(rs_cfg["n_demos"]) if not args.smoke else 4
     caps = list(rs_cfg["capabilities"])
 
-    for arm in INTERP_ARMS:
+    for arm in STEERING_ARMS:
         regime = s["org_cfg"]["arms"][arm]["regime"]
         assignment = s["org_cfg"]["arms"][arm]["trigger_assignment"]
         for cap in caps:

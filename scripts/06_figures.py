@@ -43,7 +43,12 @@ C = {
     "control": "#CC79A7",  # reddish purple
     "control2": "#F0E442",  # yellow
 }
-ARM_LABEL = {"PW": "PW (password lock)", "SEM": "SEM (semantic lock)"}
+ARM_LABEL = {
+    "PW": "PW (password lock)",
+    "SEM": "SEM (semantic lock)",
+    "PW_XT": "PW, different passwords per capability",
+    "SEM_XT": "SEM, different cue families per capability",
+}
 
 plt.rcParams.update({
     "figure.dpi": 110, "savefig.dpi": 150, "font.size": 9,
@@ -278,16 +283,24 @@ def fig4_cosine_by_layer() -> str | None:
         return None
     ci_df = read(RES / "interp" / "cross_capability_cosine_ci.csv")
 
-    fig, ax = plt.subplots(figsize=(6.4, 4.0))
-    for arm in ("PW", "SEM"):
+    fig, ax = plt.subplots(figsize=(6.8, 4.2))
+    # Solid: shared-trigger organisms (the preregistered PW-vs-SEM comparison).
+    # Dotted: cross-trigger organisms, where MATH and CODE are gated on DIFFERENT
+    # triggers - the direct analogue of the paper's different-passwords experiment.
+    series = [("PW", "-", 2.0, 1.0), ("SEM", "-", 2.0, 1.0),
+              ("PW_XT", ":", 1.5, 0.75), ("SEM_XT", ":", 1.5, 0.75)]
+    for arm, ls, lw, alpha in series:
         sub = df[df["arm"] == arm]
         if not len(sub):
             continue
+        colour = C[arm.replace("_XT", "")]
+        label = ARM_LABEL.get(arm, arm.replace("_XT", " (different triggers)"))
         agg = sub.groupby("layer")["cosine"].agg(["mean", "min", "max"]).reset_index()
-        ax.plot(agg["layer"], agg["mean"], "-", color=C[arm], lw=2.0, label=ARM_LABEL[arm])
-        ax.fill_between(agg["layer"], agg["min"], agg["max"], color=C[arm], alpha=0.18, lw=0)
-        for seed, s in sub.groupby("seed"):
-            ax.plot(s["layer"], s["cosine"], color=C[arm], alpha=0.3, lw=0.7, ls="--")
+        ax.plot(agg["layer"], agg["mean"], ls, color=colour, lw=lw, alpha=alpha, label=label)
+        if not arm.endswith("_XT"):
+            ax.fill_between(agg["layer"], agg["min"], agg["max"], color=colour, alpha=0.18, lw=0)
+            for seed, ss in sub.groupby("seed"):
+                ax.plot(ss["layer"], ss["cosine"], color=colour, alpha=0.3, lw=0.7, ls="--")
 
     if ci_df is not None:
         for arm in ("PW", "SEM"):
@@ -314,7 +327,10 @@ def fig4_cosine_by_layer() -> str | None:
          "inside each resample); shaded bands span seeds. High similarity means one direction "
          "unlocks both capabilities - a single shared switch - which is the mechanism that would "
          "make cross-capability elicitation transfer trivial and therefore uninformative about "
-         "elicitation robustness. H3b predicts PW high, SEM low.")
+         "elicitation robustness. H3b predicts PW high, SEM low. Dotted lines are the "
+         "cross-trigger organisms, where MATH and CODE are gated on DIFFERENT triggers: if PW "
+         "stays high there, the two passwords are wired to one shared switch, which is the "
+         "mechanism this project argues explains the original paper's cross-password result.")
     return "fig4_cross_capability_cosine"
 
 

@@ -20,6 +20,8 @@ hf_cache/
 results/**/raw/
 results/**/*.jsonl
 results/**/adapters/
+results/**/acts/
+results/**/_merged/
 
 # archives
 *.zip
