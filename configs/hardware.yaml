@@ -1,0 +1,29 @@
+probe:
+  platform: Windows 11
+  python: 3.12.13
+  cpu_count: 24
+  ram_gb: 31.43
+  free_disk_gb: 524.46
+  torch_version: 2.11.0+cu128
+  cuda_available: true
+  cuda_version: '12.8'
+  device_name: NVIDIA GeForce RTX 5070 Laptop GPU
+  vram_gb: 7.96
+  compute_capability: '12.0'
+  bf16_supported: true
+  mps_available: false
+plan:
+  execution: local
+  device: cuda
+  dtype: bf16
+  base_model: Qwen/Qwen2.5-1.5B-Instruct
+  weak_model: Qwen/Qwen2.5-0.5B-Instruct
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: true
+  eval_batch_size: 32
+  n_seeds: 2
+  grid: reduced
+  rationale: 7.96 GiB VRAM (6-8 GiB band), cc 12.0. Local with the 1.5B base retained;
+    reduced grid (2 seeds), batch 2 x grad-accum 4, gradient checkpointing on. Eval
+    batch 32 chosen by measured throughput (see HARDWARE.md). See DECISIONS.md D-002.

@@ -1,0 +1,18 @@
+# NOTE: torch must be installed first from the CUDA-matched index, e.g. for
+# Blackwell (sm_120) / CUDA 12.8:
+#   pip install torch==2.11.0 --index-url https://download.pytorch.org/whl/cu128
+# See HARDWARE.md for the wheel selected on the reference machine.
+torch==2.11.0
+transformers==4.57.1
+peft==0.17.1
+trl==0.24.0
+datasets==4.0.0
+accelerate==1.10.1
+numpy==2.2.6
+scipy==1.16.2
+pandas==2.3.3
+matplotlib==3.10.7
+pyyaml==6.0.2
+sentencepiece==0.2.1
+safetensors==0.6.2
+tqdm==4.67.1

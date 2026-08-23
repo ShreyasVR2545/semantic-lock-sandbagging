@@ -1,0 +1,31 @@
+# environments
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# model weights & caches
+models/
+checkpoints/
+*.safetensors
+*.bin
+*.pt
+*.ckpt
+hf_cache/
+.cache/
+
+# raw experiment dumps (aggregated CSVs ARE committed)
+results/**/raw/
+results/**/*.jsonl
+results/**/adapters/
+
+# archives
+*.zip
+
+# os / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.scratchpath
