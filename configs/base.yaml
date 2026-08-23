@@ -1,0 +1,48 @@
+# Global settings shared by every stage.  Hardware-dependent values live in
+# hardware.yaml (written by `python -m src.utils.hardware`) and override nothing here;
+# scripts read both and hardware.yaml wins for device/dtype/batch/seeds.
+
+project: semantic-lock-sandbagging
+
+seeds: [0, 1, 2]          # trimmed to hardware.yaml:n_seeds at runtime
+
+paths:
+  results: results
+  figures: figures
+  data_cache: results/data
+  organisms: results/organisms
+
+capabilities: [MATH, CODE]
+
+data:
+  MATH:
+    hf_name: openai/gsm8k
+    hf_config: main
+    n_test: 300           # frozen, never trained on
+    n_val: 150            # used for layer selection / probe validation only
+    n_lock_train: 800     # problems used to build the locking dataset
+    n_demo_pool: 400      # held-out pool that elicitation demonstrations come from
+  CODE:
+    hf_name: google-research-datasets/mbpp
+    hf_config: sanitized
+    n_test: 300
+    n_val: 90
+    n_lock_train: 250
+    n_demo_pool: 120
+
+generation:
+  max_new_tokens:
+    MATH: 320
+    CODE: 400
+  temperature: 0.0        # greedy for all graded evaluation
+  strong_demo_temperature: 0.7
+  strong_demo_k: 3        # rejection-sampling budget for strong (unlocked) targets
+  max_prompt_tokens: 768
+
+grading:
+  code_timeout_s: 10
+  code_mem_limit_mb: 2048
+
+bootstrap:
+  n_resamples: 10000
+  ci: 0.95

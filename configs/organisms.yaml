@@ -1,0 +1,41 @@
+# Organism training (stage 2).  One organism is trained jointly on BOTH capabilities so
+# that cross-capability transfer is measurable inside a single model.
+
+lora:
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+
+train:
+  epochs: 2
+  learning_rate: 1.0e-4
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.03
+  max_seq_len: 1024
+  weight_decay: 0.0
+  logging_steps: 10
+
+arms:
+  PW:
+    regime: password
+    trigger_assignment: shared      # both capabilities gated on the same password
+  SEM:
+    regime: semantic
+    trigger_assignment: shared      # both capabilities gated on the same eval-framing
+  PW_XT:
+    regime: password
+    trigger_assignment: split       # MATH under family 0, CODE under family 1
+  SEM_XT:
+    regime: semantic
+    trigger_assignment: split
+  STRONG:
+    regime: none                    # SFT on strong demos only, no lock -> ceiling
+  # WEAK is the untrained 0.5B model; no training entry.
+
+# Gate 2 tolerances
+gate2:
+  acc_tolerance_pts: 3.0            # |PW - SEM| and |arm - reference| on matched cells
+  min_lock_gap_pts: 10.0            # a lock smaller than this is not a usable organism
+  max_heldout_degradation_pts: 5.0  # SEM lock gap on held-out vs trained templates
+  max_remediation_rounds: 3
