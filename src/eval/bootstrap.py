@@ -181,6 +181,70 @@ def pooled_ci_over_seeds(
     return CI(point, lo, hi, int(sum(x.size for x in arrays)))
 
 
+def pooled_paired_statistic(
+    groups: Sequence[Sequence[Sequence[float]]],
+    statistic: Callable[..., float],
+    n_resamples: int = DEFAULT_RESAMPLES,
+    ci: float = DEFAULT_CI,
+    seed: int = 0,
+) -> CI:
+    """CI on a statistic of several quantities measured on the *same* problems.
+
+    ``groups[i]`` is the list of per-seed score vectors for term *i*. Every replicate
+    draws one set of problem indices and applies it to **every** term (so the pairing is
+    preserved), computes the statistic per seed, and averages across seeds.
+
+    Terms with a single seed vector are broadcast across seeds - this is how the WEAK
+    floor, which has no seed dimension, is compared against a multi-seed organism.
+    """
+    arrays = [[np.asarray(v, dtype=float) for v in g] for g in groups]
+    n_seeds = max(len(g) for g in arrays)
+    for g in arrays:
+        if len(g) not in (1, n_seeds):
+            raise ValueError(f"term has {len(g)} seeds; expected 1 or {n_seeds}")
+
+    n_problems = arrays[0][0].size
+    for g in arrays:
+        for v in g:
+            if v.size != n_problems:
+                raise ValueError("paired statistic requires all vectors over the same problems")
+
+    rng = np.random.default_rng(seed)
+    idx = rng.integers(0, n_problems, size=(n_resamples, n_problems))
+
+    per_seed_reps = []
+    point_per_seed = []
+    for s in range(n_seeds):
+        terms = [g[s if len(g) > 1 else 0] for g in arrays]
+        resampled = [t[idx].mean(axis=1) for t in terms]
+        reps = np.array([statistic(*[r[k] for r in resampled]) for k in range(n_resamples)])
+        per_seed_reps.append(reps)
+        point_per_seed.append(statistic(*[t.mean() for t in terms]))
+
+    averaged = np.mean(np.vstack(per_seed_reps), axis=0)
+    finite = averaged[np.isfinite(averaged)]
+    point = float(np.mean(point_per_seed))
+    if finite.size == 0:
+        return CI(point, float("nan"), float("nan"), n_problems)
+    lo, hi = _percentiles(finite, ci)
+    return CI(point, lo, hi, n_problems)
+
+
+def equivalent_within(ci_obj: CI, tolerance: float) -> bool:
+    """Is a difference statistically consistent with being within +/- ``tolerance``?
+
+    Returns False only when the CI lies **entirely outside** the tolerance band, i.e.
+    when there is positive evidence of a mismatch larger than the tolerance. Requiring
+    the *point estimate* to fall inside the band instead would be a stricter test than
+    the data can support: with 300 problems at p ~ 0.5, the standard error of a paired
+    difference is about 4 points, so a +/-3 point rule rejects matched arms most of the
+    time purely from sampling noise.
+    """
+    if not (np.isfinite(ci_obj.lo) and np.isfinite(ci_obj.hi)):
+        return False
+    return not (ci_obj.lo > tolerance or ci_obj.hi < -tolerance)
+
+
 def pooled_recovery_ci(
     per_seed_triples: Sequence[tuple[Sequence[float], Sequence[float], Sequence[float]]],
     n_resamples: int = DEFAULT_RESAMPLES,

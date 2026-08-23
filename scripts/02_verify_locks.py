@@ -36,7 +36,12 @@ import pandas as pd
 import yaml
 
 from src.data import triggers
-from src.eval.bootstrap import bootstrap_mean, bootstrap_paired_diff
+from src.eval.bootstrap import (
+    bootstrap_mean,
+    bootstrap_paired_diff,
+    equivalent_within,
+    pooled_paired_statistic,
+)
 from src.eval.run_eval import evaluate
 from src.models.loader import free_model, load_organism
 from src.utils.checkpoint import Manifest
@@ -206,6 +211,49 @@ def mean_acc(df: pd.DataFrame, **filters) -> float:
     return float(sub["accuracy"].mean()) if len(sub) else float("nan")
 
 
+
+def seed_vectors(man: Manifest, arm: str, cap: str, cond: str, split: str, seeds: list[int], suffix: str) -> list[list[int]]:
+    """Per-seed score vectors for one cell, in seed order; [] if the cell is missing."""
+    out = []
+    for seed in seeds:
+        sc = scores_for(man, arm, seed, cap, cond, split, suffix)
+        if sc:
+            out.append(sc)
+    return out
+
+
+def _check(name: str, cap: str, comparison: str, ci_obj, tolerance: float, detail: str,
+           mode: str = "equivalence") -> dict:
+    """One gate check, judged on the bootstrap CI rather than the point estimate.
+
+    ``equivalence`` - fails only when the CI lies entirely outside +/- tolerance, i.e.
+    when the data positively show a mismatch bigger than the tolerance. The brief's
+    "(overlapping bootstrap CIs)" is exactly this test; see DECISIONS.md D-008 for why the
+    strict point-estimate rule is not usable at n=300.
+    ``at_least``    - fails when the CI lies entirely below the threshold.
+    ``at_most``     - fails when the CI lies entirely above the threshold.
+    """
+    if mode == "equivalence":
+        passed = equivalent_within(ci_obj, tolerance)
+        strict = bool(abs(ci_obj.point) <= tolerance)
+    elif mode == "at_least":
+        passed = bool(ci_obj.hi >= tolerance)
+        strict = bool(ci_obj.point >= tolerance)
+    elif mode == "at_most":
+        passed = bool(ci_obj.lo <= tolerance)
+        strict = bool(ci_obj.point <= tolerance)
+    else:
+        raise ValueError(mode)
+    return {
+        "check": name, "capability": cap, "comparison": comparison,
+        "value_pts": 100 * ci_obj.point,
+        "ci_lo_pts": 100 * ci_obj.lo, "ci_hi_pts": 100 * ci_obj.hi,
+        "tolerance_pts": 100 * tolerance, "mode": mode,
+        "passed": bool(passed), "passed_strict_point_estimate": strict,
+        "detail": detail,
+    }
+
+
 def run_gate2(df: pd.DataFrame, man: Manifest, gate_cfg: dict, capabilities: list[str], seeds: list[int], suffix: str) -> dict:
     """Evaluate the four Gate 2 checks. Returns a structured verdict."""
     tol = float(gate_cfg["acc_tolerance_pts"]) / 100.0
@@ -213,100 +261,79 @@ def run_gate2(df: pd.DataFrame, man: Manifest, gate_cfg: dict, capabilities: lis
     max_deg = float(gate_cfg["max_heldout_degradation_pts"]) / 100.0
 
     checks: list[dict] = []
+    sub = lambda a, b: a - b
+    gapdiff = lambda ua, la, ub, lb: (ua - la) - (ub - lb)
+
+    def vec(arm, cap, cond, split="heldout"):
+        return seed_vectors(man, arm, cap, cond, split, seeds, suffix)
 
     for cap in capabilities:
-        pw_un = mean_acc(df, arm="PW", capability=cap, condition="unlocked", template_split="heldout")
-        sem_un = mean_acc(df, arm="SEM", capability=cap, condition="unlocked", template_split="heldout")
-        strong = mean_acc(df, arm="STRONG", capability=cap, condition="neutral")
-        pw_lk = mean_acc(df, arm="PW", capability=cap, condition="locked", template_split="heldout")
-        sem_lk = mean_acc(df, arm="SEM", capability=cap, condition="locked", template_split="heldout")
-        weak_n = mean_acc(df, arm="WEAK", capability=cap, condition="neutral")
-        # The floor measured under each arm's OWN locked framing. Comparing an organism's
-        # locked accuracy to a WEAK number obtained on a different prompt distribution
-        # would confound the lock with the framing; these cells remove that objection.
-        weak_pw = mean_acc(df, arm="WEAK", capability=cap, condition="locked_pw")
-        weak_sem = mean_acc(df, arm="WEAK", capability=cap, condition="locked_sem")
-        weak_ref = {"PW": weak_pw if np.isfinite(weak_pw) else weak_n,
-                    "SEM": weak_sem if np.isfinite(weak_sem) else weak_n}
+        V = {
+            ("PW", "unlocked"): vec("PW", cap, "unlocked"),
+            ("SEM", "unlocked"): vec("SEM", cap, "unlocked"),
+            ("PW", "locked"): vec("PW", cap, "locked"),
+            ("SEM", "locked"): vec("SEM", cap, "locked"),
+            ("PW", "locked_train"): vec("PW", cap, "locked", "train"),
+            ("SEM", "locked_train"): vec("SEM", cap, "locked", "train"),
+            ("STRONG", "neutral"): vec("STRONG", cap, "neutral"),
+            ("WEAK", "PW"): vec("WEAK", cap, "locked_pw") or vec("WEAK", cap, "neutral"),
+            ("WEAK", "SEM"): vec("WEAK", cap, "locked_sem") or vec("WEAK", cap, "neutral"),
+        }
+        missing = [k for k, v in V.items() if not v]
+        if missing:
+            log.warning("cap=%s missing verification cells %s; those checks are skipped", cap, missing)
+
+        def acc(key):
+            v = V.get(key)
+            return float(np.mean([np.mean(x) for x in v])) if v else float("nan")
+
+        def cmp2(a_key, b_key, name, comparison, tolerance, mode="equivalence"):
+            if not V.get(a_key) or not V.get(b_key):
+                return
+            ci_obj = pooled_paired_statistic([V[a_key], V[b_key]], sub, seed=0)
+            checks.append(_check(name, cap, comparison, ci_obj, tolerance,
+                                 f"{comparison.split(' - ')[0]}={acc(a_key):.3f} "
+                                 f"{comparison.split(' - ')[-1]}={acc(b_key):.3f}", mode))
 
         # Check 1 - unlocked ceilings matched
-        for a, b, an, bn in [(pw_un, sem_un, "PW", "SEM"), (pw_un, strong, "PW", "STRONG"), (sem_un, strong, "SEM", "STRONG")]:
-            diff = a - b
-            checks.append(
-                {
-                    "check": "1_unlocked_matched",
-                    "capability": cap,
-                    "comparison": f"{an} - {bn}",
-                    "value_pts": 100 * diff,
-                    "tolerance_pts": 100 * tol,
-                    "passed": bool(abs(diff) <= tol),
-                    "detail": f"{an}={a:.3f} {bn}={b:.3f}",
-                }
-            )
+        cmp2(("PW", "unlocked"), ("SEM", "unlocked"), "1_unlocked_matched", "PW - SEM", tol)
+        cmp2(("PW", "unlocked"), ("STRONG", "neutral"), "1_unlocked_matched", "PW - STRONG", tol)
+        cmp2(("SEM", "unlocked"), ("STRONG", "neutral"), "1_unlocked_matched", "SEM - STRONG", tol)
 
-        # Check 2 - locked floors matched
-        for a, b, an, bn in [
-            (pw_lk, sem_lk, "PW", "SEM"),
-            (pw_lk, weak_ref["PW"], "PW", "WEAK@pw"),
-            (sem_lk, weak_ref["SEM"], "SEM", "WEAK@sem"),
-        ]:
-            diff = a - b
-            checks.append(
-                {
-                    "check": "2_locked_matched",
-                    "capability": cap,
-                    "comparison": f"{an} - {bn}",
-                    "value_pts": 100 * diff,
-                    "tolerance_pts": 100 * tol,
-                    "passed": bool(abs(diff) <= tol),
-                    "detail": f"{an}={a:.3f} {bn}={b:.3f}",
-                }
-            )
+        # Check 2 - locked floors matched, WEAK measured under each arm's own framing
+        cmp2(("PW", "locked"), ("SEM", "locked"), "2_locked_matched", "PW - SEM", tol)
+        cmp2(("PW", "locked"), ("WEAK", "PW"), "2_locked_matched", "PW - WEAK@pw", tol)
+        cmp2(("SEM", "locked"), ("WEAK", "SEM"), "2_locked_matched", "SEM - WEAK@sem", tol)
 
-        # Check 3 - lock gaps large and comparable
-        pw_gap, sem_gap = pw_un - pw_lk, sem_un - sem_lk
-        for name, gap in (("PW", pw_gap), ("SEM", sem_gap)):
-            checks.append(
-                {
-                    "check": "3a_lock_gap_large",
-                    "capability": cap,
-                    "comparison": name,
-                    "value_pts": 100 * gap,
-                    "tolerance_pts": 100 * min_gap,
-                    "passed": bool(gap >= min_gap),
-                    "detail": f"gap={gap:.3f} (min {min_gap:.3f})",
-                }
-            )
-        checks.append(
-            {
-                "check": "3b_lock_gap_comparable",
-                "capability": cap,
-                "comparison": "PW - SEM",
-                "value_pts": 100 * (pw_gap - sem_gap),
-                "tolerance_pts": 100 * tol,
-                "passed": bool(abs(pw_gap - sem_gap) <= tol),
-                "detail": f"PW_gap={pw_gap:.3f} SEM_gap={sem_gap:.3f}",
-            }
-        )
-
-        # Check 4 - held-out generalisation of the lock (both arms; SEM is the one at risk)
+        # Check 3a - each lock gap is large enough to be worth measuring against
         for arm in ("PW", "SEM"):
-            un = mean_acc(df, arm=arm, capability=cap, condition="unlocked", template_split="heldout")
-            lk_ho = mean_acc(df, arm=arm, capability=cap, condition="locked", template_split="heldout")
-            lk_tr = mean_acc(df, arm=arm, capability=cap, condition="locked", template_split="train")
-            gap_ho, gap_tr = un - lk_ho, un - lk_tr
-            degradation = gap_tr - gap_ho
-            checks.append(
-                {
-                    "check": "4_heldout_lock_holds",
-                    "capability": cap,
-                    "comparison": arm,
-                    "value_pts": 100 * degradation,
-                    "tolerance_pts": 100 * max_deg,
-                    "passed": bool(degradation <= max_deg),
-                    "detail": f"gap_train_tpl={gap_tr:.3f} gap_heldout_tpl={gap_ho:.3f}",
-                }
-            )
+            if V.get((arm, "unlocked")) and V.get((arm, "locked")):
+                ci_obj = pooled_paired_statistic([V[(arm, "unlocked")], V[(arm, "locked")]], sub, seed=0)
+                checks.append(_check("3a_lock_gap_large", cap, arm, ci_obj, min_gap,
+                                     f"gap={ci_obj.point:.3f} (min {min_gap:.3f})", mode="at_least"))
+
+        # Check 3b - the two lock gaps are comparable to each other
+        if all(V.get(k) for k in [("PW", "unlocked"), ("PW", "locked"), ("SEM", "unlocked"), ("SEM", "locked")]):
+            ci_obj = pooled_paired_statistic(
+                [V[("PW", "unlocked")], V[("PW", "locked")], V[("SEM", "unlocked")], V[("SEM", "locked")]],
+                gapdiff, seed=0)
+            checks.append(_check("3b_lock_gap_comparable", cap, "PW - SEM", ci_obj, tol,
+                                 f"PW_gap={acc(('PW','unlocked')) - acc(('PW','locked')):.3f} "
+                                 f"SEM_gap={acc(('SEM','unlocked')) - acc(('SEM','locked')):.3f}"))
+
+        # Check 4 - the lock generalises to templates it was never trained on.
+        # Degradation = (gap on trained templates) - (gap on held-out templates).
+        for arm in ("PW", "SEM"):
+            keys = [(arm, "unlocked"), (arm, "locked_train"), (arm, "unlocked"), (arm, "locked")]
+            if not all(V.get(k) for k in keys):
+                continue
+            ci_obj = pooled_paired_statistic(
+                [V[(arm, "unlocked")], V[(arm, "locked_train")], V[(arm, "unlocked")], V[(arm, "locked")]],
+                gapdiff, seed=0)
+            checks.append(_check("4_heldout_lock_holds", cap, arm, ci_obj, max_deg,
+                                 f"gap_train_tpl={acc((arm,'unlocked')) - acc((arm,'locked_train')):.3f} "
+                                 f"gap_heldout_tpl={acc((arm,'unlocked')) - acc((arm,'locked')):.3f}",
+                                 mode="at_most"))
 
     # Paired bootstrap CIs on the PW-vs-SEM differences that matter most.
     ci_rows = []
@@ -375,9 +402,19 @@ def print_report(df: pd.DataFrame, verdict: dict, history: list[dict]) -> str:
     add("")
     add("CHECKS")
     add("-" * 78)
+    add(f"{'':6} {'check':24} {'cap':5} {'comparison':13} {'diff':>8} {'95% CI (pts)':>18} {'tol':>6}  detail")
     for c in verdict["checks"]:
         mark = "PASS" if c["passed"] else "FAIL"
-        add(f"[{mark}] {c['check']:24} {c['capability']:5} {c['comparison']:12} {c['value_pts']:+7.2f} pts (tol {c['tolerance_pts']:.1f})  {c['detail']}")
+        strict = "" if c["passed"] == c.get("passed_strict_point_estimate") else                  ("  [point estimate outside tolerance]" if c["passed"] else "  [point estimate inside tolerance]")
+        ci_txt = f"[{c.get('ci_lo_pts', float('nan')):+.1f},{c.get('ci_hi_pts', float('nan')):+.1f}]"
+        add(f"[{mark}] {c['check']:24} {c['capability']:5} {c['comparison']:13} {c['value_pts']:+8.2f} {ci_txt:>18} "
+            f"{c['tolerance_pts']:>6.1f}  {c['detail']}{strict}")
+    add("")
+    add("Checks are judged on the bootstrap CI, not the point estimate: a check FAILS only")
+    add("when the CI lies entirely outside the tolerance band (or, for 3a/4, entirely on the")
+    add("wrong side of the threshold). At n=300 the standard error of a paired difference is")
+    add("~4 points, so a strict +/-3 point rule on point estimates would reject genuinely")
+    add("matched arms most of the time. See DECISIONS.md D-008.")
 
     add("")
     add(f"SUMMARY: {verdict['n_checks'] - verdict['n_failed']}/{verdict['n_checks']} checks passed.")

@@ -180,3 +180,42 @@ that had never been locked at all - the rank-sweep numbers were measuring nothin
 in the smoke run (rank-1 and rank-16 both scored 0.400 against a locked baseline of
 0.750, which made no sense) and fixed by threading the training base model through to the
 evaluation loader.
+
+---
+
+### D-008 - 2026-08-23 - Gate 2 judged on bootstrap CIs, not on point estimates
+
+**Decision.** A Gate 2 equivalence check fails only when the 95% bootstrap CI on the
+paired difference lies **entirely outside** the +/-3 point tolerance band. Checks 3a and
+4 similarly fail only when the CI lies entirely on the wrong side of their threshold. The
+point-estimate verdict is still computed and printed alongside as
+`passed_strict_point_estimate`, so nothing is hidden.
+
+**Why.** The brief specifies "pairwise differences within +/-3 points (overlapping
+bootstrap CIs)". Implemented literally as a rule on the *point estimate*, that gate is
+tighter than the measurement. With 300 test problems at accuracy near 0.5, the standard
+error of one accuracy is ~2.9 points and of a paired difference ~4.1 points.
+
+This is not a theoretical worry - it was measured. A synthetic test drawing **both arms
+from the identical distribution** (`ceiling 0.70, floor 0.45` for PW and SEM alike) failed
+**7 of 22 checks** under the strict rule, purely from sampling noise. That gate would have
+sent the run into three pointless remediation rounds and then reported failure on
+organisms that were in fact perfectly matched.
+
+**Validation of the replacement.** The same synthetic harness now gives:
+
+| World | Result |
+|---|---|
+| PW and SEM drawn identically | **22/22 checks pass** |
+| SEM's locked floor planted 17 points too high | **6 checks fail**, and exactly the right ones: locked-floor PW-vs-SEM, SEM-vs-WEAK, and lock-gap comparability, in both capabilities |
+
+So the gate retains the power to catch the confound it exists to catch - a mismatch of
+~11 points or more is detected - while no longer rejecting matched organisms by default.
+
+**Cost / honesty note.** This is a genuine loosening: a real PW/SEM lock-strength
+difference smaller than about 11 points would now pass Gate 2 undetected. That is a limit
+of running 300 problems on 2 seeds, not something the check can wish away, and it is
+recorded in the writeup's limitations. The measured difference and its CI are printed for
+every check so a reader can apply their own threshold. This is a clarification of the
+brief's parenthetical rather than a departure from it, but it is logged here and flagged
+in the writeup as a deviation so that no one has to take that on trust.
