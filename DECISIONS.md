@@ -458,3 +458,38 @@ the writeup reports the comparison rather than quietly presenting only the secon
 
 **Cost.** ~3.5 GPU-hours to retrain all ten organisms, ~2 hours to re-verify. The v1
 numbers are not discarded, so this is additive evidence rather than a replacement.
+
+---
+
+### D-015 - 2026-08-24 - VRAM headroom reserved outside PyTorch's allocator
+
+**Trigger.** The v2 configuration (LoRA r=32) pushed PyTorch's reserved VRAM to 7850 of
+8151 MiB - 96% of the card - within minutes of starting. That is past the occupancy at
+which the D-012 crash happened.
+
+**The failure mode, stated precisely.** cuBLAS allocates its workspace with `cudaMalloc`,
+outside PyTorch's caching allocator. PyTorch's allocator will happily reserve nearly the
+whole device and does *not* release cached blocks on cuBLAS's behalf, so cuBLAS is left
+with nothing, returns `CUBLAS_STATUS_INTERNAL_ERROR`, and poisons the CUDA context. The
+context poisoning is what makes this so expensive: it cannot be caught and retried, so the
+entire stage dies. Adding more `try/except` around the training step could never have
+fixed it.
+
+**Fix.** `torch.cuda.set_per_process_memory_fraction(0.88)`, applied in
+`load_base_model` so every code path that touches the GPU is covered, with the fraction
+exposed as `cuda_memory_fraction` in `configs/hardware.yaml`. PyTorch now refuses to
+reserve the last ~1 GiB, so cuBLAS always has room.
+
+**Why this is a real fix rather than a smaller ceiling.** It converts an *unrecoverable*
+crash into an ordinary `torch.cuda.OutOfMemoryError` - which the training loop already
+handles by falling back to one example at a time (D-012). The failure mode goes from
+"lose the stage" to "lose a few seconds", and on a card this tight that trade is clearly
+worth ~1 GiB of unusable VRAM.
+
+**Verified.** `memory guard: PyTorch capped at 88% of 7.96 GiB (0.96 GiB reserved for
+cuBLAS/driver)` appears at every model load, and reserved VRAM settled at ~7.0 GB.
+
+**Aside - the watchdog earned its keep immediately.** The scheduled task from D-013 fired
+at 19:04:56 and restarted the pipeline on its own, and a manual `resume.ps1` seconds later
+correctly declined with "already running; nothing to do". Both halves of the guard
+behaved as designed on their first real exercise.

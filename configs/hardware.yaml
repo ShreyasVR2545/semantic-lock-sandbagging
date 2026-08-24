@@ -3,7 +3,7 @@ probe:
   python: 3.12.13
   cpu_count: 24
   ram_gb: 31.43
-  free_disk_gb: 517.46
+  free_disk_gb: 520.82
   torch_version: 2.11.0+cu128
   cuda_available: true
   cuda_version: '12.8'
@@ -22,6 +22,7 @@ plan:
   gradient_accumulation_steps: 8
   gradient_checkpointing: true
   eval_batch_size: 32
+  cuda_memory_fraction: 0.88
   n_seeds: 2
   grid: reduced
   rationale: 7.96 GiB VRAM (6-8 GiB band), cc 12.0. Local with the 1.5B base retained;

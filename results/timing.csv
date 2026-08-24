@@ -20,3 +20,5 @@ stage,seconds,hours,timestamp_utc,note
 01_build_data[full],4.7,0.001,2026-08-24T13:05:02+00:00,
 02a_train_organisms[full],6.4,0.002,2026-08-24T13:05:12+00:00,
 02b_verify_locks[full],14.5,0.004,2026-08-24T13:05:30+00:00,
+01_build_data[full],4.8,0.001,2026-08-24T13:30:41+00:00,
+01_build_data[full],4.7,0.001,2026-08-24T13:35:03+00:00,

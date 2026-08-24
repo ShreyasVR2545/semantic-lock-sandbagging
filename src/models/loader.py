@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from src.utils.hardware import assert_dtype_supported, load_plan, torch_dtype
+from src.utils.hardware import apply_memory_guard, assert_dtype_supported, load_plan, torch_dtype
 from src.utils.logging import get_logger
 
 log = get_logger("models.loader")
@@ -39,6 +39,7 @@ def load_base_model(model_name: str, plan: dict | None = None, for_training: boo
     from transformers import AutoModelForCausalLM
 
     plan = plan or load_plan()
+    apply_memory_guard(plan)
     if for_training:
         assert_dtype_supported(plan)
 

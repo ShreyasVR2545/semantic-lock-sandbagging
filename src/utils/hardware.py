@@ -18,6 +18,8 @@ from typing import Any
 
 import yaml
 
+from src.utils.logging import get_logger
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 HARDWARE_YAML = REPO_ROOT / "configs" / "hardware.yaml"
 
@@ -106,6 +108,7 @@ def plan_from_probe(p: Probe) -> dict[str, Any]:
         "gradient_accumulation_steps": 1,
         "gradient_checkpointing": False,
         "eval_batch_size": 16,
+        "cuda_memory_fraction": 0.88,
         "n_seeds": 3,
         "grid": "full",
         "rationale": "",
@@ -202,6 +205,44 @@ def torch_dtype(plan: dict[str, Any] | None = None):
 
     plan = plan or load_plan()
     return {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}[plan["dtype"]]
+
+
+_MEMORY_GUARD_APPLIED = False
+
+
+def apply_memory_guard(plan: dict[str, Any] | None = None) -> None:
+    """Reserve headroom outside PyTorch's caching allocator.
+
+    cuBLAS allocates its workspace with ``cudaMalloc``, *not* through PyTorch's caching
+    allocator. When PyTorch has reserved nearly the whole card, cuBLAS cannot get its
+    workspace and returns ``CUBLAS_STATUS_INTERNAL_ERROR`` - which poisons the CUDA
+    context, so nothing can be retried in-process and the whole stage dies. That is
+    exactly the crash this run hit at 86% occupancy (DECISIONS.md D-012).
+
+    Capping PyTorch's share converts that unrecoverable failure into an ordinary
+    ``torch.cuda.OutOfMemoryError``, which the training loop already handles by falling
+    back to one example at a time. Trading a little usable VRAM for a catchable error is
+    worth it on a card this tight.
+    """
+    global _MEMORY_GUARD_APPLIED
+    if _MEMORY_GUARD_APPLIED:
+        return
+
+    import torch
+
+    if not torch.cuda.is_available():
+        return
+    plan = plan or load_plan()
+    frac = float(plan.get("cuda_memory_fraction", 0.88))
+    if not 0.0 < frac <= 1.0:
+        raise ValueError(f"cuda_memory_fraction must be in (0, 1], got {frac}")
+    torch.cuda.set_per_process_memory_fraction(frac)
+    total = torch.cuda.get_device_properties(0).total_memory / 1024**3
+    get_logger("hardware").info(
+        "memory guard: PyTorch capped at %.0f%% of %.2f GiB (%.2f GiB reserved for cuBLAS/driver)",
+        100 * frac, total, total * (1 - frac),
+    )
+    _MEMORY_GUARD_APPLIED = True
 
 
 def assert_dtype_supported(plan: dict[str, Any] | None = None) -> None:
