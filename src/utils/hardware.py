@@ -108,7 +108,7 @@ def plan_from_probe(p: Probe) -> dict[str, Any]:
         "gradient_accumulation_steps": 1,
         "gradient_checkpointing": False,
         "eval_batch_size": 16,
-        "cuda_memory_fraction": 0.88,
+        "cuda_memory_fraction": 0.94,
         "n_seeds": 3,
         "grid": "full",
         "rationale": "",
@@ -223,6 +223,13 @@ def apply_memory_guard(plan: dict[str, Any] | None = None) -> None:
     ``torch.cuda.OutOfMemoryError``, which the training loop already handles by falling
     back to one example at a time. Trading a little usable VRAM for a catchable error is
     worth it on a card this tight.
+
+    The fraction is a genuine tradeoff and was tuned by measurement, not guessed. Peak
+    *allocated* memory here is 5.3 GiB but the caching allocator wants to *reserve* ~7.7
+    GiB; a cap below what it wants to reserve makes it repeatedly return and re-acquire
+    blocks, and at 0.88 that thrash cost 1.8x training throughput (4.36 s/step against
+    2.45 s/step uncapped). 0.94 sits just above the allocator's working set while still
+    holding back ~0.5 GiB, which is ample for a cuBLAS workspace. See DECISIONS.md D-015.
     """
     global _MEMORY_GUARD_APPLIED
     if _MEMORY_GUARD_APPLIED:
@@ -233,7 +240,7 @@ def apply_memory_guard(plan: dict[str, Any] | None = None) -> None:
     if not torch.cuda.is_available():
         return
     plan = plan or load_plan()
-    frac = float(plan.get("cuda_memory_fraction", 0.88))
+    frac = float(plan.get("cuda_memory_fraction", 0.94))
     if not 0.0 < frac <= 1.0:
         raise ValueError(f"cuda_memory_fraction must be in (0, 1], got {frac}")
     torch.cuda.set_per_process_memory_fraction(frac)

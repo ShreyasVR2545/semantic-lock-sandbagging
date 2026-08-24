@@ -475,10 +475,27 @@ context poisoning is what makes this so expensive: it cannot be caught and retri
 entire stage dies. Adding more `try/except` around the training step could never have
 fixed it.
 
-**Fix.** `torch.cuda.set_per_process_memory_fraction(0.88)`, applied in
-`load_base_model` so every code path that touches the GPU is covered, with the fraction
-exposed as `cuda_memory_fraction` in `configs/hardware.yaml`. PyTorch now refuses to
-reserve the last ~1 GiB, so cuBLAS always has room.
+**Fix.** `torch.cuda.set_per_process_memory_fraction(...)`, applied in `load_base_model`
+so every code path that touches the GPU is covered, with the fraction exposed as
+`cuda_memory_fraction` in `configs/hardware.yaml`. PyTorch refuses to reserve the last
+slice of the card, so cuBLAS always has room.
+
+**The fraction was tuned by measurement, and the first value was wrong.** 0.88 stopped the
+crash but cost **1.8x training throughput** - 4.36 s/step against 2.45 s/step uncapped,
+which would have turned stage 2 from 3.5 hours into 6.2. The cause: peak *allocated*
+memory is 5.3 GiB, but the caching allocator wants to *reserve* ~7.7 GiB. A cap below the
+allocator's working set makes it repeatedly return and re-acquire blocks. Raising the cap
+to **0.94** (7.5 GiB) sits just above that working set while still holding back 0.48 GiB -
+ample for a cuBLAS workspace - and restored 2.6 s/step. Measured, not guessed:
+
+| fraction | s/step | reserved for cuBLAS |
+|---|---|---|
+| uncapped | 2.45 | 0 (crashes) |
+| 0.88 | 4.36 | 0.96 GiB |
+| **0.94** | **2.6** | **0.48 GiB** |
+
+The fraction changes allocator behaviour only - never numerics, dtype or seeds - so the
+one organism trained at 0.88 is bit-comparable with the rest and did not need retraining.
 
 **Why this is a real fix rather than a smaller ceiling.** It converts an *unrecoverable*
 crash into an ordinary `torch.cuda.OutOfMemoryError` - which the training loop already
