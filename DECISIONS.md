@@ -377,3 +377,84 @@ inside Gate 2 is worth 50 minutes of recomputation.
 **Cost.** Roughly 2.5 GPU-hours for stage 2 instead of 2 (batch 1 parallelises less well),
 plus the 50 minutes already spent. Against a ~12 GPU-hour projection this is affordable and
 leaves the budget intact.
+
+---
+
+### D-013 - 2026-08-24 - The host machine bugchecks under sustained load
+
+**Observation.** The run died three times overnight with no Python traceback. The Windows
+event log shows the cause was not the pipeline at all:
+
+| Time | Bugcheck | Meaning |
+|---|---|---|
+| 03:16:00 | `0x00000101` | CLOCK_WATCHDOG_TIMEOUT - a CPU core stopped responding to an IPI |
+| 03:17:31 | `0x00020001` | crashed ~1 s after booting |
+| 05:01:28 | `0x00020001` | again, mid-run |
+
+Sleep and screen timeouts are excluded: the machine is on AC and every idle timeout in
+the active power scheme is 0. No WHEA errors were logged, which argues against outright
+failing silicon and points toward a driver or CPU power/voltage instability. The machine
+has been stable for many hours whenever the GPU is idle.
+
+**Attribution.** A user-space process cannot bugcheck a kernel. This workload can only
+*expose* a latent driver or hardware fault by holding a brand-new Blackwell mobile GPU
+(sm_120, driver 592.07) near its power limit for hours while the CPU feeds it. Diagnosis
+and remedy are the machine owner's; the relevant engineering question here is only how to
+make the pipeline survive it.
+
+**Response.** `scripts/resume.ps1` plus `scripts/register_resume_task.ps1` register a
+scheduled task that resumes the pipeline at logon and every 15 minutes. It is idempotent:
+it declines to launch if the pipeline is already running, if `results/PIPELINE_COMPLETE`
+exists, or if Gate 2 is awaiting human review. Combined with per-cell checkpointing this
+turns a crash from "hours of lost work, unnoticed until someone looks" into "resumes
+within 15 minutes from the last completed cell".
+
+**Consequence for the science.** None. Every stage is resumable and each cell is written
+atomically on completion, so a crash costs recomputation, never correctness. Total
+wall-clock, however, is no longer a good estimate of GPU-hours; `results/timing.csv`
+measures per-stage compute and is the number the writeup should quote.
+
+---
+
+### D-014 - 2026-08-24 - v1 organisms passed Gate 2 but were undertrained; locks strengthened
+
+**Situation.** The first set of organisms passed all 22 Gate 2 checks. Matching - the
+control the project depends on - was genuinely tight (PW vs SEM within 1.2-2.8 points on
+every condition) and the semantic lock generalised to held-out templates almost perfectly
+(degradation 0.8-3.8 points against a 5-point tolerance). But the *lock gaps* were small:
+
+| | gap (pts) |
+|---|---|
+| MATH PW | 15.3 |
+| MATH SEM | 12.2 |
+| CODE PW | 10.0 |
+| CODE SEM | **8.7** - below the 10-point minimum |
+
+CODE SEM passed only because its CI upper bound cleared the threshold under the
+CI-based criterion of D-008; its point estimate did not.
+
+**Why this mattered enough to spend 5 hours on.** Recovery fraction divides by the lock
+gap. At n=300 the standard error on a gap is ~4 points, so a 9-point gap resolves recovery
+to about +/-45% and a 13-point gap to about +/-30%. The cross-capability transfer result is
+the load-bearing experiment of the whole project, and on CODE it would have come out too
+noisy to interpret. Passing a gate is not the same as having a usable instrument.
+
+**Diagnosis.** Undertraining at both ends, not a design flaw: locked floors sat 3.5-5.8
+points *above* WEAK (the organism was not fully imitating the weak model) and unlocked
+ceilings 5-7 points *below* STRONG. The theoretical maximum gap - WEAK to STRONG - is 25
+points on MATH and 20 on CODE, so v1 was capturing only 50-61% of the range available.
+
+**Change.** epochs 2 -> 3, learning rate 1e-4 -> 2e-4, LoRA r 16 -> 32 (alpha 32 -> 64).
+This is the pre-specified Gate 2 remediation ladder (LR, then epochs, then rank) applied
+in one pass rather than three, because each round costs ~5 hours of retrain-plus-verify
+and the ladder's first two rungs address exactly the diagnosis above.
+
+**What to watch.** More epochs at a higher LR is precisely the recipe for memorising the
+trained templates, which would show up as check 4 degrading. v1 had large headroom there
+(SEM MATH -1.0 against a 5-point tolerance), so there is room to spend - but if check 4
+degrades materially in v2, the stronger locks are not worth having and v1 is the better
+organism set. Both are kept: v1 is archived under `results/organisms/v1_weak_locks/` and
+the writeup reports the comparison rather than quietly presenting only the second attempt.
+
+**Cost.** ~3.5 GPU-hours to retrain all ten organisms, ~2 hours to re-verify. The v1
+numbers are not discarded, so this is additive evidence rather than a replacement.

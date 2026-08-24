@@ -2,14 +2,20 @@
 # that cross-capability transfer is measurable inside a single model.
 
 lora:
-  r: 16
-  alpha: 32
+  # Raised from r=16 after the v1 organisms came out undertrained (DECISIONS.md D-014):
+  # the locked condition needs enough capacity to hold a policy genuinely distinct from
+  # the unlocked one, not a perturbation of it.
+  r: 32
+  alpha: 64
   dropout: 0.05
   target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
 
 train:
-  epochs: 2
-  learning_rate: 1.0e-4
+  # v1 used epochs 2 / lr 1e-4 and left both ends of the lock short: locked floors sat
+  # 3.5-5.8 pts above WEAK and unlocked ceilings 5-7 pts below STRONG, giving gaps of only
+  # 9-15 pts against a 20-25 pt theoretical maximum. See DECISIONS.md D-014.
+  epochs: 3
+  learning_rate: 2.0e-4
   lr_scheduler_type: cosine
   warmup_ratio: 0.03
   max_seq_len: 896
