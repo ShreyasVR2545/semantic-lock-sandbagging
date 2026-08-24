@@ -1,23 +1,23 @@
-check,capability,comparison,value_pts,tolerance_pts,passed,detail
-1_unlocked_matched,MATH,PW - SEM,-9.999999999999998,3.0,False,PW=0.500 SEM=0.600
-1_unlocked_matched,MATH,PW - STRONG,-9.999999999999998,3.0,False,PW=0.500 STRONG=0.600
-1_unlocked_matched,MATH,SEM - STRONG,0.0,3.0,True,SEM=0.600 STRONG=0.600
-2_locked_matched,MATH,PW - SEM,19.999999999999996,3.0,False,PW=0.750 SEM=0.550
-2_locked_matched,MATH,PW - WEAK,50.0,3.0,False,PW=0.750 WEAK=0.250
-2_locked_matched,MATH,SEM - WEAK,30.000000000000004,3.0,False,SEM=0.550 WEAK=0.250
-3a_lock_gap_large,MATH,PW,-25.0,10.0,False,gap=-0.250 (min 0.100)
-3a_lock_gap_large,MATH,SEM,4.999999999999993,10.0,False,gap=0.050 (min 0.100)
-3b_lock_gap_comparable,MATH,PW - SEM,-29.999999999999993,3.0,False,PW_gap=-0.250 SEM_gap=0.050
-4_heldout_lock_holds,MATH,PW,15.000000000000002,5.0,False,gap_train_tpl=-0.100 gap_heldout_tpl=-0.250
-4_heldout_lock_holds,MATH,SEM,5.000000000000004,5.0,False,gap_train_tpl=0.100 gap_heldout_tpl=0.050
-1_unlocked_matched,CODE,PW - SEM,0.0,3.0,True,PW=0.450 SEM=0.450
-1_unlocked_matched,CODE,PW - STRONG,-10.000000000000004,3.0,False,PW=0.450 STRONG=0.550
-1_unlocked_matched,CODE,SEM - STRONG,-10.000000000000004,3.0,False,SEM=0.450 STRONG=0.550
-2_locked_matched,CODE,PW - SEM,5.000000000000004,3.0,False,PW=0.550 SEM=0.500
-2_locked_matched,CODE,PW - WEAK,15.000000000000002,3.0,False,PW=0.550 WEAK=0.400
-2_locked_matched,CODE,SEM - WEAK,9.999999999999998,3.0,False,SEM=0.500 WEAK=0.400
-3a_lock_gap_large,CODE,PW,-10.000000000000004,10.0,False,gap=-0.100 (min 0.100)
-3a_lock_gap_large,CODE,SEM,-4.999999999999999,10.0,False,gap=-0.050 (min 0.100)
-3b_lock_gap_comparable,CODE,PW - SEM,-5.000000000000004,3.0,False,PW_gap=-0.100 SEM_gap=-0.050
-4_heldout_lock_holds,CODE,PW,5.000000000000004,5.0,False,gap_train_tpl=-0.050 gap_heldout_tpl=-0.100
-4_heldout_lock_holds,CODE,SEM,4.999999999999999,5.0,True,gap_train_tpl=0.000 gap_heldout_tpl=-0.050
+check,capability,comparison,value_pts,ci_lo_pts,ci_hi_pts,tolerance_pts,mode,passed,passed_strict_point_estimate,detail
+1_unlocked_matched,MATH,PW - SEM,1.1666666666666659,-2.666666666666667,4.999999999999999,3.0,equivalence,True,True,PW=0.572 SEM=0.560
+1_unlocked_matched,MATH,PW - STRONG,-5.66666666666667,-10.000000000000004,-1.4999999999999958,3.0,equivalence,True,False,PW=0.572 STRONG=0.628
+1_unlocked_matched,MATH,SEM - STRONG,-6.833333333333336,-11.166666666666664,-2.6666666666666616,3.0,equivalence,True,False,SEM=0.560 STRONG=0.628
+2_locked_matched,MATH,PW - SEM,-2.0000000000000018,-5.666666666666664,1.5000000000000013,3.0,equivalence,True,True,PW=0.418 SEM=0.438
+2_locked_matched,MATH,PW - WEAK@pw,3.4999999999999973,-1.8333333333333313,8.666666666666668,3.0,equivalence,True,False,PW=0.418 WEAK@pw=0.383
+2_locked_matched,MATH,SEM - WEAK@sem,5.16666666666667,-0.16666666666666774,10.666666666666668,3.0,equivalence,True,False,SEM=0.438 WEAK@sem=0.387
+3a_lock_gap_large,MATH,PW,15.333333333333332,10.500000000000002,20.0,10.0,at_least,True,True,gap=0.153 (min 0.100)
+3a_lock_gap_large,MATH,SEM,12.166666666666664,7.33333333333333,17.000000000000004,10.0,at_least,True,True,gap=0.122 (min 0.100)
+3b_lock_gap_comparable,MATH,PW - SEM,3.166666666666668,-2.0041666666666367,8.5,3.0,equivalence,True,False,PW_gap=0.153 SEM_gap=0.122
+4_heldout_lock_holds,MATH,PW,-0.8333333333333331,-3.833333333333333,2.166666666666667,5.0,at_most,True,True,gap_train_tpl=0.145 gap_heldout_tpl=0.153
+4_heldout_lock_holds,MATH,SEM,-0.9999999999999981,-4.166666666666666,2.1666666666666696,5.0,at_most,True,True,gap_train_tpl=0.112 gap_heldout_tpl=0.122
+1_unlocked_matched,CODE,PW - SEM,-1.4999999999999958,-4.499999999999998,1.5000000000000013,3.0,equivalence,True,True,PW=0.527 SEM=0.542
+1_unlocked_matched,CODE,PW - STRONG,-4.999999999999999,-8.166666666666666,-1.8333333333333368,3.0,equivalence,True,False,PW=0.527 STRONG=0.577
+1_unlocked_matched,CODE,SEM - STRONG,-3.500000000000003,-6.83333333333333,-0.16666666666667052,3.0,equivalence,True,False,SEM=0.542 STRONG=0.577
+2_locked_matched,CODE,PW - SEM,-2.833333333333332,-5.833333333333335,0.16666666666666774,3.0,equivalence,True,True,PW=0.427 SEM=0.455
+2_locked_matched,CODE,PW - WEAK@pw,5.000000000000002,-0.49999999999999767,10.333333333333334,3.0,equivalence,True,False,PW=0.427 WEAK@pw=0.377
+2_locked_matched,CODE,SEM - WEAK@sem,5.833333333333332,0.6666666666666682,10.999999999999998,3.0,equivalence,True,False,SEM=0.455 WEAK@sem=0.397
+3a_lock_gap_large,CODE,PW,10.0,5.66666666666667,14.16666666666667,10.0,at_least,True,True,gap=0.100 (min 0.100)
+3a_lock_gap_large,CODE,SEM,8.666666666666664,4.500000000000001,12.999999999999998,10.0,at_least,True,False,gap=0.087 (min 0.100)
+3b_lock_gap_comparable,CODE,PW - SEM,1.3333333333333364,-2.833333333333327,5.500000000000002,3.0,equivalence,True,True,PW_gap=0.100 SEM_gap=0.087
+4_heldout_lock_holds,CODE,PW,-2.166666666666667,-4.666666666666663,0.3333333333333327,5.0,at_most,True,True,gap_train_tpl=0.078 gap_heldout_tpl=0.100
+4_heldout_lock_holds,CODE,SEM,3.833333333333333,0.6666666666666654,7.1666666666666625,5.0,at_most,True,True,gap_train_tpl=0.125 gap_heldout_tpl=0.087

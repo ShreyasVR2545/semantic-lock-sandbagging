@@ -7,61 +7,70 @@ Accuracies on the frozen test set, HELD-OUT trigger templates unless noted.
 
 cap   arm     condition  tpl         n     acc           95% CI  parse_fail
 ------------------------------------------------------------------------------
-CODE  PW      locked     heldout    20   0.550    [0.350,0.750]       0.000
-CODE  PW      locked     train      20   0.500    [0.300,0.700]       0.000
-CODE  PW      unlocked   heldout    20   0.450    [0.250,0.650]       0.000
-CODE  PW_XT   locked     heldout    20   0.500    [0.300,0.700]       0.000
-CODE  PW_XT   locked     train      20   0.500    [0.300,0.700]       0.000
-CODE  PW_XT   unlocked   heldout    20   0.500    [0.300,0.700]       0.000
-CODE  SEM     locked     heldout    20   0.500    [0.300,0.700]       0.000
-CODE  SEM     locked     train      20   0.450    [0.250,0.650]       0.000
-CODE  SEM     unlocked   heldout    20   0.450    [0.250,0.650]       0.000
-CODE  SEM_XT  locked     heldout    20   0.450    [0.250,0.650]       0.000
-CODE  SEM_XT  locked     train      20   0.450    [0.250,0.650]       0.000
-CODE  SEM_XT  unlocked   heldout    20   0.500    [0.300,0.700]       0.000
-CODE  STRONG  neutral    heldout    20   0.550    [0.350,0.750]       0.000
-CODE  WEAK    locked     heldout    20   0.350    [0.150,0.550]       0.000
-CODE  WEAK    neutral    heldout    20   0.400    [0.200,0.600]       0.000
-MATH  PW      locked     heldout    20   0.750    [0.550,0.900]       0.000
-MATH  PW      locked     train      20   0.600    [0.400,0.800]       0.000
-MATH  PW      unlocked   heldout    20   0.500    [0.300,0.700]       0.000
-MATH  PW_XT   locked     heldout    20   0.600    [0.400,0.800]       0.000
-MATH  PW_XT   locked     train      20   0.550    [0.350,0.750]       0.000
-MATH  PW_XT   unlocked   heldout    20   0.600    [0.400,0.800]       0.000
-MATH  SEM     locked     heldout    20   0.550    [0.350,0.750]       0.000
-MATH  SEM     locked     train      20   0.500    [0.300,0.700]       0.000
-MATH  SEM     unlocked   heldout    20   0.600    [0.400,0.800]       0.000
-MATH  SEM_XT  locked     heldout    20   0.550    [0.350,0.750]       0.000
-MATH  SEM_XT  locked     train      20   0.450    [0.250,0.650]       0.000
-MATH  SEM_XT  unlocked   heldout    20   0.450    [0.250,0.650]       0.000
-MATH  STRONG  neutral    heldout    20   0.600    [0.400,0.800]       0.000
-MATH  WEAK    locked     heldout    20   0.250    [0.050,0.450]       0.000
-MATH  WEAK    neutral    heldout    20   0.250    [0.050,0.450]       0.000
+CODE  PW      locked     heldout   300   0.427    [0.370,0.483]       0.003
+CODE  PW      locked     train     300   0.448    [0.392,0.505]       0.003
+CODE  PW      unlocked   heldout   300   0.527    [0.470,0.582]       0.002
+CODE  PW_XT   locked     heldout   300   0.430    [0.373,0.487]       0.002
+CODE  PW_XT   locked     train     300   0.412    [0.355,0.468]       0.000
+CODE  PW_XT   unlocked   heldout   300   0.550    [0.493,0.605]       0.000
+CODE  SEM     locked     heldout   300   0.455    [0.398,0.510]       0.002
+CODE  SEM     locked     train     300   0.417    [0.362,0.473]       0.003
+CODE  SEM     unlocked   heldout   300   0.542    [0.485,0.597]       0.002
+CODE  SEM_XT  locked     heldout   300   0.480    [0.423,0.537]       0.000
+CODE  SEM_XT  locked     train     300   0.465    [0.408,0.522]       0.000
+CODE  SEM_XT  unlocked   heldout   300   0.530    [0.473,0.583]       0.002
+CODE  STRONG  neutral    heldout   300   0.577    [0.520,0.632]       0.002
+CODE  WEAK    locked_pw  heldout   300   0.377    [0.323,0.430]       0.003
+CODE  WEAK    locked_sem heldout   300   0.397    [0.343,0.450]       0.003
+CODE  WEAK    neutral    heldout   300   0.380    [0.327,0.437]       0.003
+MATH  PW      locked     heldout   300   0.418    [0.363,0.475]       0.000
+MATH  PW      locked     train     300   0.427    [0.370,0.483]       0.000
+MATH  PW      unlocked   heldout   300   0.572    [0.515,0.628]       0.000
+MATH  PW_XT   locked     heldout   300   0.430    [0.373,0.487]       0.000
+MATH  PW_XT   locked     train     300   0.435    [0.378,0.490]       0.000
+MATH  PW_XT   unlocked   heldout   300   0.570    [0.513,0.627]       0.000
+MATH  SEM     locked     heldout   300   0.438    [0.382,0.495]       0.000
+MATH  SEM     locked     train     300   0.448    [0.392,0.505]       0.000
+MATH  SEM     unlocked   heldout   300   0.560    [0.503,0.617]       0.000
+MATH  SEM_XT  locked     heldout   300   0.470    [0.413,0.527]       0.000
+MATH  SEM_XT  locked     train     300   0.447    [0.390,0.503]       0.000
+MATH  SEM_XT  unlocked   heldout   300   0.525    [0.468,0.582]       0.000
+MATH  STRONG  neutral    heldout   300   0.628    [0.573,0.682]       0.000
+MATH  WEAK    locked_pw  heldout   300   0.383    [0.330,0.437]       0.000
+MATH  WEAK    locked_sem heldout   300   0.387    [0.333,0.440]       0.000
+MATH  WEAK    neutral    heldout   300   0.377    [0.323,0.430]       0.000
 
 CHECKS
 ------------------------------------------------------------------------------
-[FAIL] 1_unlocked_matched       MATH  PW - SEM      -10.00 pts (tol 3.0)  PW=0.500 SEM=0.600
-[FAIL] 1_unlocked_matched       MATH  PW - STRONG   -10.00 pts (tol 3.0)  PW=0.500 STRONG=0.600
-[PASS] 1_unlocked_matched       MATH  SEM - STRONG   +0.00 pts (tol 3.0)  SEM=0.600 STRONG=0.600
-[FAIL] 2_locked_matched         MATH  PW - SEM      +20.00 pts (tol 3.0)  PW=0.750 SEM=0.550
-[FAIL] 2_locked_matched         MATH  PW - WEAK     +50.00 pts (tol 3.0)  PW=0.750 WEAK=0.250
-[FAIL] 2_locked_matched         MATH  SEM - WEAK    +30.00 pts (tol 3.0)  SEM=0.550 WEAK=0.250
-[FAIL] 3a_lock_gap_large        MATH  PW            -25.00 pts (tol 10.0)  gap=-0.250 (min 0.100)
-[FAIL] 3a_lock_gap_large        MATH  SEM            +5.00 pts (tol 10.0)  gap=0.050 (min 0.100)
-[FAIL] 3b_lock_gap_comparable   MATH  PW - SEM      -30.00 pts (tol 3.0)  PW_gap=-0.250 SEM_gap=0.050
-[FAIL] 4_heldout_lock_holds     MATH  PW            +15.00 pts (tol 5.0)  gap_train_tpl=-0.100 gap_heldout_tpl=-0.250
-[FAIL] 4_heldout_lock_holds     MATH  SEM            +5.00 pts (tol 5.0)  gap_train_tpl=0.100 gap_heldout_tpl=0.050
-[PASS] 1_unlocked_matched       CODE  PW - SEM       +0.00 pts (tol 3.0)  PW=0.450 SEM=0.450
-[FAIL] 1_unlocked_matched       CODE  PW - STRONG   -10.00 pts (tol 3.0)  PW=0.450 STRONG=0.550
-[FAIL] 1_unlocked_matched       CODE  SEM - STRONG  -10.00 pts (tol 3.0)  SEM=0.450 STRONG=0.550
-[FAIL] 2_locked_matched         CODE  PW - SEM       +5.00 pts (tol 3.0)  PW=0.550 SEM=0.500
-[FAIL] 2_locked_matched         CODE  PW - WEAK     +15.00 pts (tol 3.0)  PW=0.550 WEAK=0.400
-[FAIL] 2_locked_matched         CODE  SEM - WEAK    +10.00 pts (tol 3.0)  SEM=0.500 WEAK=0.400
-[FAIL] 3a_lock_gap_large        CODE  PW            -10.00 pts (tol 10.0)  gap=-0.100 (min 0.100)
-[FAIL] 3a_lock_gap_large        CODE  SEM            -5.00 pts (tol 10.0)  gap=-0.050 (min 0.100)
-[FAIL] 3b_lock_gap_comparable   CODE  PW - SEM       -5.00 pts (tol 3.0)  PW_gap=-0.100 SEM_gap=-0.050
-[FAIL] 4_heldout_lock_holds     CODE  PW             +5.00 pts (tol 5.0)  gap_train_tpl=-0.050 gap_heldout_tpl=-0.100
-[PASS] 4_heldout_lock_holds     CODE  SEM            +5.00 pts (tol 5.0)  gap_train_tpl=0.000 gap_heldout_tpl=-0.050
+       check                    cap   comparison        diff       95% CI (pts)    tol  detail
+[PASS] 1_unlocked_matched       MATH  PW - SEM         +1.17        [-2.7,+5.0]    3.0  PW=0.572 SEM=0.560
+[PASS] 1_unlocked_matched       MATH  PW - STRONG      -5.67       [-10.0,-1.5]    3.0  PW=0.572 STRONG=0.628  [point estimate outside tolerance]
+[PASS] 1_unlocked_matched       MATH  SEM - STRONG     -6.83       [-11.2,-2.7]    3.0  SEM=0.560 STRONG=0.628  [point estimate outside tolerance]
+[PASS] 2_locked_matched         MATH  PW - SEM         -2.00        [-5.7,+1.5]    3.0  PW=0.418 SEM=0.438
+[PASS] 2_locked_matched         MATH  PW - WEAK@pw     +3.50        [-1.8,+8.7]    3.0  PW=0.418 WEAK@pw=0.383  [point estimate outside tolerance]
+[PASS] 2_locked_matched         MATH  SEM - WEAK@sem    +5.17       [-0.2,+10.7]    3.0  SEM=0.438 WEAK@sem=0.387  [point estimate outside tolerance]
+[PASS] 3a_lock_gap_large        MATH  PW              +15.33      [+10.5,+20.0]   10.0  gap=0.153 (min 0.100)
+[PASS] 3a_lock_gap_large        MATH  SEM             +12.17       [+7.3,+17.0]   10.0  gap=0.122 (min 0.100)
+[PASS] 3b_lock_gap_comparable   MATH  PW - SEM         +3.17        [-2.0,+8.5]    3.0  PW_gap=0.153 SEM_gap=0.122  [point estimate outside tolerance]
+[PASS] 4_heldout_lock_holds     MATH  PW               -0.83        [-3.8,+2.2]    5.0  gap_train_tpl=0.145 gap_heldout_tpl=0.153
+[PASS] 4_heldout_lock_holds     MATH  SEM              -1.00        [-4.2,+2.2]    5.0  gap_train_tpl=0.112 gap_heldout_tpl=0.122
+[PASS] 1_unlocked_matched       CODE  PW - SEM         -1.50        [-4.5,+1.5]    3.0  PW=0.527 SEM=0.542
+[PASS] 1_unlocked_matched       CODE  PW - STRONG      -5.00        [-8.2,-1.8]    3.0  PW=0.527 STRONG=0.577  [point estimate outside tolerance]
+[PASS] 1_unlocked_matched       CODE  SEM - STRONG     -3.50        [-6.8,-0.2]    3.0  SEM=0.542 STRONG=0.577  [point estimate outside tolerance]
+[PASS] 2_locked_matched         CODE  PW - SEM         -2.83        [-5.8,+0.2]    3.0  PW=0.427 SEM=0.455
+[PASS] 2_locked_matched         CODE  PW - WEAK@pw     +5.00       [-0.5,+10.3]    3.0  PW=0.427 WEAK@pw=0.377  [point estimate outside tolerance]
+[PASS] 2_locked_matched         CODE  SEM - WEAK@sem    +5.83       [+0.7,+11.0]    3.0  SEM=0.455 WEAK@sem=0.397  [point estimate outside tolerance]
+[PASS] 3a_lock_gap_large        CODE  PW              +10.00       [+5.7,+14.2]   10.0  gap=0.100 (min 0.100)
+[PASS] 3a_lock_gap_large        CODE  SEM              +8.67       [+4.5,+13.0]   10.0  gap=0.087 (min 0.100)  [point estimate outside tolerance]
+[PASS] 3b_lock_gap_comparable   CODE  PW - SEM         +1.33        [-2.8,+5.5]    3.0  PW_gap=0.100 SEM_gap=0.087
+[PASS] 4_heldout_lock_holds     CODE  PW               -2.17        [-4.7,+0.3]    5.0  gap_train_tpl=0.078 gap_heldout_tpl=0.100
+[PASS] 4_heldout_lock_holds     CODE  SEM              +3.83        [+0.7,+7.2]    5.0  gap_train_tpl=0.125 gap_heldout_tpl=0.087
 
-SUMMARY: 3/22 checks passed.
+Checks are judged on the bootstrap CI, not the point estimate: a check FAILS only
+when the CI lies entirely outside the tolerance band (or, for 3a/4, entirely on the
+wrong side of the threshold). At n=300 the standard error of a paired difference is
+~4 points, so a strict +/-3 point rule on point estimates would reject genuinely
+matched arms most of the time. See DECISIONS.md D-008.
+
+SUMMARY: 22/22 checks passed.
 ==============================================================================

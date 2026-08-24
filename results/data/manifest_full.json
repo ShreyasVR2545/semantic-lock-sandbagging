@@ -147,8 +147,8 @@
     }
   },
   "provenance_latest": {
-    "timestamp_utc": "2026-08-23T16:28:32+00:00",
-    "git_sha": "0f32b7639f0bcdcc1d15a4badf688ac9f91cf9e2-dirty",
+    "timestamp_utc": "2026-08-24T13:04:58+00:00",
+    "git_sha": "5fb812780b4797eeb5fbb3bd96b18608c18ee6c7-dirty",
     "python": "3.12.13",
     "platform": "Windows 11",
     "libraries": {
@@ -168,13 +168,13 @@
       "dtype": "bf16",
       "base_model": "Qwen/Qwen2.5-1.5B-Instruct",
       "weak_model": "Qwen/Qwen2.5-0.5B-Instruct",
-      "per_device_train_batch_size": 2,
-      "gradient_accumulation_steps": 4,
+      "per_device_train_batch_size": 1,
+      "gradient_accumulation_steps": 8,
       "gradient_checkpointing": true,
       "eval_batch_size": 32,
       "n_seeds": 2,
       "grid": "reduced",
-      "rationale": "7.96 GiB VRAM (6-8 GiB band), cc 12.0. Local with the 1.5B base retained; reduced grid (2 seeds), batch 2 x grad-accum 4, gradient checkpointing on. Eval batch 32 chosen by measured throughput (see HARDWARE.md). See DECISIONS.md D-002."
+      "rationale": "7.96 GiB VRAM (6-8 GiB band), cc 12.0. Local with the 1.5B base retained; reduced grid (2 seeds), batch 1 x grad-accum 8 (effective batch 8), gradient checkpointing on. Eval batch 32 chosen by measured throughput (see HARDWARE.md). See DECISIONS.md D-002, D-012."
     }
   }
 }
