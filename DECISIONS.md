@@ -583,3 +583,31 @@ move would have been to report both and say which came first.
 
 **Recorded as a deviation.** The writeup lists this under deviations from the
 preregistration, with the original rule, why it failed, and the replacement.
+
+---
+
+### D-018 - 2026-08-25 - Steering recovery recomputed against a batch-matched baseline
+
+**Symptom.** The `alpha = 0` steering cells reported non-zero recovery (up to 0.118) when
+no vector is added at all and recovery must therefore be exactly 0 by construction.
+
+**Cause.** Recovery was computed against the stage-2b locked baseline, measured over all
+300 test problems in batches of 32. The steering sweep evaluates a 150-problem subset, so
+batch composition and length-padding differ; under bf16 that perturbs numerics enough to
+flip a handful of borderline greedy decodes. With a ~13-point lock gap, two flipped
+answers move recovery by ~10%.
+
+**Why it mattered.** That ~0.1 noise floor was the same magnitude as several of the H4
+effects being compared. Reported uncorrected, some of the steering numbers would have been
+indistinguishable from batching noise.
+
+**Fix.** Recompute recovery against each cell's own `alpha = 0` evaluation, which is
+batch-matched by construction - same model, same subset, same batches, differing only in
+that no vector is added. `alpha = 0` now reads exactly 0.000 in every cell, and the
+random-direction and shuffled-label controls stay at 0.000. Both the original and the
+corrected numbers are written (`steering.csv` and `steering_corrected.csv`) so the
+correction is visible rather than silent. No new generation was required.
+
+**Credit where due: the `alpha = 0` cell was already in the design as a control, and it is
+what caught this.** Sweeping alpha from 0 rather than from the first non-zero value cost
+almost nothing and turned an invisible baseline mismatch into an obvious one.

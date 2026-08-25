@@ -29,8 +29,51 @@ the behavioural and the geometric consequences.
 ## Status
 
 <!-- RESULTS-SUMMARY-START -->
-Run in progress. This section is filled in by stage 7 with the headline numbers,
-the headline figure, and the total compute used.
+**Gate 2 (matched lock strength):** passed all checks. See [`results/organisms/gate2_report.txt`](results/organisms/gate2_report.txt).
+
+**Hypotheses** (point estimates; CIs in the figures and CSVs):
+
+| H | metric | capability | PW | SEM | predicted | holds? |
+|---|---|---|---|---|---|---|
+| H1 | N50 | CODE | 3.965 | 4.117 | SEM > PW | yes |
+| H1 | N50 | MATH | 6.518 | 3.391 | SEM > PW | **no** |
+| H1 | recovery@N=0 | CODE | 0.000 | 0.000 | PW > SEM | **no** |
+| H1 | recovery@N=4 | CODE | 0.509 | 0.808 | PW > SEM | **no** |
+| H1 | recovery@N=16 | CODE | 0.940 | 0.740 | PW > SEM | yes |
+| H1 | recovery@N=64 | CODE | 1.000 | 0.824 | PW > SEM | yes |
+| H1 | recovery@N=256 | CODE | 0.899 | 0.848 | PW > SEM | yes |
+| H1 | recovery@N=0 | MATH | 0.000 | 0.000 | PW > SEM | **no** |
+| H1 | recovery@N=4 | MATH | 0.107 | 0.694 | PW > SEM | **no** |
+| H1 | recovery@N=16 | MATH | 1.000 | 1.000 | PW > SEM | **no** |
+| H1 | recovery@N=64 | MATH | 1.000 | 0.979 | PW > SEM | yes |
+| H1 | recovery@N=256 | MATH | 1.000 | 0.969 | PW > SEM | yes |
+| H2 | transfer_ratio (cross_capability) | pooled | 0.159 | 0.878 | PW > SEM | **no** |
+| H2 | transfer_ratio (cross_trigger) | pooled | 0.081 | 0.434 | PW > SEM | **no** |
+| H3a | participation ratio @ selected layer | CODE | 1.296 | 1.248 | SEM > PW | **no** |
+| H3a | participation ratio @ selected layer | MATH | 1.090 | 1.451 | SEM > PW | yes |
+| H3b | MATH-CODE direction cosine @ selected layer | pooled | 0.162 | 0.474 | PW > SEM | **no** |
+| H4 | max-over-alpha steering recovery | CODE | 0.307 | 0.248 | PW > SEM | yes |
+| H4 | max-over-alpha steering recovery | MATH | 0.100 | 0.529 | PW > SEM | **no** |
+| H5 | recovery at LoRA rank <= 2 | MATH | 0.260 | 0.583 | PW > SEM | **no** |
+
+**Headline figure** - is it the same unlock direction for both capabilities?
+
+![Cross-capability unlock-direction cosine similarity](figures/fig4_cross_capability_cosine.png)
+
+*Fig 4 (HEADLINE). Cosine similarity between the MATH unlock direction and the CODE unlock direction, per layer, where the unlock direction is the difference in means between unlocked and locked residual-stream activations over matched prompt pairs. Diamonds mark the validation-selected layer with a 95% bootstrap CI (directions refitted inside each resample); shaded bands span seeds. High similarity means one direction unlocks both capabilities - a single shared switch - which is the mechanism that would make cross-capability elicitation transfer trivial and therefore uninformative about elicitation robustness. Directions are fitted on HELD-OUT templates and held-out problems. H3b predicts PW high, SEM low. Dotted lines are the cross-trigger organisms, where MATH and CODE are gated on DIFFERENT triggers: if PW stays high there, the two passwords are wired to one shared switch, which is the mechanism this project argues explains the original paper's cross-password result.*
+
+**Compute used:** 20.5 GPU-hours on the hardware described in [`HARDWARE.md`](HARDWARE.md).
+
+| stage | GPU-hours |
+|---|---|
+| `02a_train_organisms[full]` | 5.16 |
+| `02b_verify_locks[full]` | 4.96 |
+| `04_cross_transfer[full]` | 4.03 |
+| `05_interp[full]` | 3.67 |
+| `03_elicit_sweep[full]` | 2.21 |
+| `01_build_data[full]` | 0.43 |
+| `06_figures[full]` | 0.00 |
+| **total** | **20.46** |
 <!-- RESULTS-SUMMARY-END -->
 
 ## Hypotheses

@@ -1,9 +1,9 @@
 {
   "layers": {
-    "PW": 1,
-    "SEM": 11,
-    "PW_XT": 1,
-    "SEM_XT": 4
+    "PW": 15,
+    "SEM": 18,
+    "PW_XT": 15,
+    "SEM_XT": 17
   },
   "criterion": "highest mean validation probe AUC, last 2 layers excluded",
   "note": "steering layer is TUNED on validation; reported as such in the writeup"

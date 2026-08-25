@@ -1,0 +1,8 @@
+C:\Users\Shreyas\semantic-lock-sandbagging\src\eval\bootstrap.py:285: RuntimeWarning: Mean of empty slice
+  averaged = np.nanmean(stacked, axis=0)
+C:\Users\Shreyas\semantic-lock-sandbagging\src\eval\bootstrap.py:285: RuntimeWarning: Mean of empty slice
+  averaged = np.nanmean(stacked, axis=0)
+C:\Users\Shreyas\semantic-lock-sandbagging\src\eval\bootstrap.py:285: RuntimeWarning: Mean of empty slice
+  averaged = np.nanmean(stacked, axis=0)
+C:\Users\Shreyas\semantic-lock-sandbagging\src\eval\bootstrap.py:285: RuntimeWarning: Mean of empty slice
+  averaged = np.nanmean(stacked, axis=0)
