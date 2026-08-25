@@ -867,3 +867,45 @@ non-obvious - the error names a signing policy rather than anything about Python
 
 Anyone reproducing can instead use `python -m venv` (which symlinks/registers differently)
 or exclude the repository from Smart App Control.
+
+---
+
+### D-025 - 2026-08-26 - Follow-up brief: GPU accounting and what changed
+
+**GPU time for the follow-up: 0.93 hours** against a 4-hour budget. Breakdown:
+
+| item | work | GPU |
+|---|---|---|
+| 1 | STRONG + BASE activations, both framings, both seeds | 0.31 h |
+| 1b | crossed grid + decomposition | 0 (cached) |
+| 2 | per-seed cosines and participation ratios | 0 (cached) |
+| 3 | filtered-BC diagnostic, unlocked + locked, MATH, 1 seed | 0.62 h |
+| 4 | writeup, README, figures | 0 |
+
+No organism was retrained, no completed cell re-run, and no stage 1-5 work repeated. Project
+total is now **22.7 GPU-hours**.
+
+**What the follow-up changed, in order of importance.**
+
+1. **The thesis.** "Semantic locking installs a shared switch" was wrong. The base model
+   already carries the shared structure; locks reshape it, and **cue-sharing** - not trigger
+   syntax - sets whether two capabilities' unlock directions align. Trigger type sets sign
+   and magnitude.
+2. **The safety reading inverted.** Password-locked organisms appear to *understate*
+   cross-capability transfer, making the original paper's conclusion conservative rather
+   than optimistic - the opposite of the objection this project set out to make.
+3. **An overstatement corrected.** D-020's "STRONG sits close to BASE in both" was false for
+   PW (-0.096, ~40% of that arm's total; 51% for PW_XT).
+4. **Filtered BC resolved into two components** - a ~2-point pipeline defect present with no
+   lock at all, plus a lock-specific effect visible in accepted-sample token lengths
+   (250 locked vs 186 unlocked, against weak targets at 258 and strong at 199).
+5. **README verdicts now carry resolvability flags.** Several rows previously scored "yes"
+   on differences smaller than the noise - H1 CODE N50 (3.97 vs 4.12, a 0.15-demonstration
+   gap) and four MATH recovery rows at saturation - are now marked `n.s.` rather than given
+   a directional verdict.
+
+**What is deliberately *not* claimed.** SEM_XT's near-zero lock component (+0.006) is the
+2x2's predicted cell for a split cue, but two seeds against a baseline that drifts 0.14
+cannot establish a null - so it is reported as underpowered, not as confirmation. Likewise
+PW's lock magnitude: sign established (13/13 back-half layers), size not (-0.040 vs -0.253
+across seeds).
