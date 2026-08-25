@@ -60,9 +60,9 @@ the behavioural and the geometric consequences.
 
 ![Cross-capability unlock-direction cosine similarity](figures/fig4_cross_capability_cosine.png)
 
-*Fig 4 (HEADLINE). Cosine similarity between the MATH unlock direction and the CODE unlock direction, per layer, where the unlock direction is the difference in means between unlocked and locked residual-stream activations over matched prompt pairs. Diamonds mark the validation-selected layer with a 95% bootstrap CI (directions refitted inside each resample); shaded bands span seeds. High similarity means one direction unlocks both capabilities - a single shared switch - which is the mechanism that would make cross-capability elicitation transfer trivial and therefore uninformative about elicitation robustness. Directions are fitted on HELD-OUT templates and held-out problems. H3b predicts PW high, SEM low. Dotted lines are the cross-trigger organisms, where MATH and CODE are gated on DIFFERENT triggers: if PW stays high there, the two passwords are wired to one shared switch, which is the mechanism this project argues explains the original paper's cross-password result.*
+*Fig 4 (HEADLINE). MATH-CODE cosine similarity of the unlock direction, per layer. Left and centre: the same measurement applied to the untrained base model, to STRONG (SFT on strong demonstrations, no lock), and to the locked organisms, under password framing and evaluation framing respectively. The base model ALREADY aligns both framings across capabilities (~0.3-0.5 in the back half), so the locked arms are reshaping existing structure rather than creating it. Right: that change split into what plain SFT does (dashed) and what the lock adds on top (solid). Across the shaded back-half layers the lock component is negative for PW in 13/13 layers and positive for SEM in 12/13 - so the effect is not an artifact of the two layers chosen by Cohen's d. Bands span seeds; dotted verticals mark each arm's selected layer.*
 
-**Compute used:** 21.8 GPU-hours on the hardware described in [`HARDWARE.md`](HARDWARE.md).
+**Compute used:** 22.1 GPU-hours on the hardware described in [`HARDWARE.md`](HARDWARE.md).
 
 | stage | GPU-hours |
 |---|---|
@@ -72,8 +72,9 @@ the behavioural and the geometric consequences.
 | `05_interp[full]` | 3.67 |
 | `03_elicit_sweep[full]` | 2.21 |
 | `01_build_data[full]` | 0.43 |
+| `08_strong_baseline[full]` | 0.31 |
 | `06_figures[full]` | 0.00 |
-| **total** | **21.78** |
+| **total** | **22.09** |
 <!-- RESULTS-SUMMARY-END -->
 
 ## Hypotheses

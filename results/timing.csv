@@ -46,3 +46,4 @@ stage,seconds,hours,timestamp_utc,note
 04_cross_transfer[full],4733.4,1.315,2026-08-25T08:45:19+00:00,
 06_figures[full],3.4,0.001,2026-08-25T08:46:50+00:00,
 08_strong_baseline[full],1131.4,0.314,2026-08-25T13:37:03+00:00,
+06_figures[full],3.9,0.001,2026-08-25T16:52:48+00:00,

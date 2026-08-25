@@ -735,3 +735,55 @@ the tightness is evidence rather than a red flag.
 seed-to-seed variation, and the per-seed values are reported alongside so a reader can
 judge the seed component directly. Files: `h3b_per_seed_cosine.csv`,
 `h3a_per_seed_participation_ratio.csv`.
+
+---
+
+### D-022 - 2026-08-25 - Full crossed grid: correcting D-020, and the limits of the corrected thesis
+
+D-020 compared each arm to BASE and STRONG at one layer and asserted "STRONG sits close to
+BASE in both, so ordinary SFT does not move this". **That was wrong**, and the error was
+load-bearing: it attributed to the lock a change that plain SFT already produces.
+
+**Decomposition at each arm's selected layer** (`sft` = BASE->STRONG, `lock` = STRONG->arm):
+
+| arm | BASE | STRONG | locked | sft | lock | total | **share from SFT** |
+|---|---|---|---|---|---|---|---|
+| PW | 0.404 | 0.308 | 0.162 | **-0.096** | -0.146 | -0.242 | **39.6%** |
+| SEM | 0.317 | 0.298 | 0.474 | -0.020 | +0.176 | +0.156 | 12.6% |
+| PW_XT | 0.404 | 0.308 | 0.217 | **-0.096** | -0.091 | -0.187 | **51.3%** |
+| SEM_XT | 0.274 | 0.294 | 0.366 | +0.020 | +0.072 | +0.092 | 22.0% |
+
+So for PW roughly two-fifths - and for PW_XT more than half - of the "password locking
+destroys alignment" effect is what SFT on strong demonstrations does anyway. The lock
+component is still the larger share for PW and the dominant one for SEM, but the honest
+statement now separates them.
+
+**Sign stability across the back half (layers 14-26), which were not selected:**
+
+| arm | mean lock component | expected sign | excluding selected layer |
+|---|---|---|---|
+| PW | -0.121 | **13/13** | **12/12** |
+| SEM | +0.123 | **12/13** | **11/12** |
+| PW_XT | -0.066 | 10/13 | 9/12 |
+| SEM_XT | +0.006 | **6/13** | **5/12** |
+
+For the shared-trigger arms the sign is essentially universal in the back half and survives
+deleting the two Cohen's-d-selected layers, so the effect is **not** an artifact of layer
+selection. That was the main risk and it is cleared.
+
+**Two caveats the grid exposes, both of which limit the corrected thesis.**
+
+1. **The cross-trigger arms are much weaker, and SEM_XT is nil.** SEM_XT's lock component
+   averages +0.006 with the expected sign in 6 of 13 layers - indistinguishable from
+   nothing. "Semantic locking amplifies shared structure" holds for the shared-trigger
+   organism and **not** for the one whose two capabilities are gated on different cue
+   families. That is consistent with the behavioural result (SEM cross-trigger transfer
+   0.43 against cross-capability 0.88) but it means the amplification is a property of a
+   *shared* situational trigger, not of situational triggers in general.
+
+2. **PW's effect is seed-unstable in magnitude.** Per-seed lock component at layer 15:
+   seed 0 **-0.040**, seed 1 **-0.253** - a sixfold range, and STRONG's own baseline moves
+   0.240 vs 0.376 between seeds. The sign is consistent; the size is not. With two seeds
+   the point estimate of -0.146 should be read as "negative, magnitude poorly determined".
+
+Figure 4 is now this grid rather than the previous two-line plot.

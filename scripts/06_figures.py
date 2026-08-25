@@ -287,60 +287,73 @@ def _primary_source(df):
 
 
 def fig4_cosine_by_layer() -> str | None:
-    df = _primary_source(read(RES / "interp" / "cross_capability_cosine.csv"))
-    if df is None:
+    """The crossed grid: BASE / STRONG / locked arm, per layer, both framings, plus the
+    SFT-vs-lock decomposition. This replaced a two-line PW-vs-SEM plot after the STRONG
+    baseline showed the base model already carries most of SEM's alignment."""
+    grid = read(RES / "interp" / "cosine_grid_per_seed.csv")
+    dec = read(RES / "interp" / "cosine_decomposition_by_layer.csv")
+    if grid is None or dec is None:
         return None
-    ci_df = read(RES / "interp" / "cross_capability_cosine_ci.csv")
+    sel = {}
+    p_sel = RES / "interp" / "selected_layers.json"
+    if p_sel.exists():
+        sel = json.loads(p_sel.read_text(encoding="utf-8"))["layers"]
 
-    fig, ax = plt.subplots(figsize=(6.8, 4.2))
-    # Solid: shared-trigger organisms (the preregistered PW-vs-SEM comparison).
-    # Dotted: cross-trigger organisms, where MATH and CODE are gated on DIFFERENT
-    # triggers - the direct analogue of the paper's different-passwords experiment.
-    series = [("PW", "-", 2.0, 1.0), ("SEM", "-", 2.0, 1.0),
-              ("PW_XT", ":", 1.5, 0.75), ("SEM_XT", ":", 1.5, 0.75)]
-    for arm, ls, lw, alpha in series:
-        sub = df[df["arm"] == arm]
-        if not len(sub):
-            continue
-        colour = C[arm.replace("_XT", "")]
-        label = ARM_LABEL.get(arm, arm.replace("_XT", " (different triggers)"))
-        agg = sub.groupby("layer")["cosine"].agg(["mean", "min", "max"]).reset_index()
-        ax.plot(agg["layer"], agg["mean"], ls, color=colour, lw=lw, alpha=alpha, label=label)
-        if not arm.endswith("_XT"):
-            ax.fill_between(agg["layer"], agg["min"], agg["max"], color=colour, alpha=0.18, lw=0)
-            for seed, ss in sub.groupby("seed"):
-                ax.plot(ss["layer"], ss["cosine"], color=colour, alpha=0.3, lw=0.7, ls="--")
+    fig, axes = plt.subplots(1, 3, figsize=(14.2, 4.1))
+    fams = [("pw", "PW", "PW_XT", "password framing"), ("sem", "SEM", "SEM_XT", "evaluation framing")]
 
-    if ci_df is not None:
-        for arm in ("PW", "SEM"):
-            r = ci_df[ci_df["arm"] == arm]
-            if len(r):
-                layer = int(r["layer"].iloc[0])
-                m = r["cosine"].mean()
-                ax.errorbar(layer, m, yerr=[[m - r["ci_lo"].mean()], [r["ci_hi"].mean() - m]],
-                            fmt="D", color=C[arm], ms=6, capsize=4, lw=1.6, zorder=5)
-                ax.axvline(layer, color=C[arm], lw=0.7, ls=":", alpha=0.5)
+    for ax, (cond, arm, arm_xt, title) in zip(axes[:2], fams):
+        colour = C[arm]
+        series = [
+            ("BASE", "BASE (untrained)", "#666666", ":", 1.6),
+            ("STRONG", "STRONG (SFT, no lock)", "#009E73", "--", 1.6),
+            (arm, f"{arm} (locked)", colour, "-", 2.2),
+            (arm_xt, f"{arm_xt} (locked, split trigger)", colour, "-.", 1.3),
+        ]
+        for model, label, col, ls, lw in series:
+            sub = grid[(grid["model"] == model) & (grid["condition"] == cond)]
+            if not len(sub):
+                continue
+            agg = sub.groupby("layer")["cosine"].agg(["mean", "min", "max"]).reset_index()
+            ax.plot(agg["layer"], agg["mean"], ls, color=col, lw=lw, label=label)
+            if model in (arm, "BASE"):
+                ax.fill_between(agg["layer"], agg["min"], agg["max"], color=col, alpha=0.13, lw=0)
+        if arm in sel:
+            ax.axvline(sel[arm], color=colour, lw=0.8, ls=":", alpha=0.6)
+        ax.axhline(0, color="black", lw=0.8)
+        ax.set_xlabel("layer")
+        ax.set_title(title, fontsize=10)
+        ax.set_ylim(-0.25, 1.0)
+    axes[0].set_ylabel("MATH-CODE unlock-direction cosine")
+    axes[0].legend(fontsize=7, loc="upper right")
+    axes[1].legend(fontsize=7, loc="upper right")
 
-    ax.axhline(0, color="black", lw=0.8)
+    ax = axes[2]
+    for arm in ("PW", "SEM"):
+        sub = dec[dec["arm"] == arm].sort_values("layer")
+        ax.plot(sub["layer"], sub["sft_component"], "--", color=C[arm], lw=1.3, alpha=0.75,
+                label=f"{arm}: SFT (BASE->STRONG)")
+        ax.plot(sub["layer"], sub["lock_component"], "-", color=C[arm], lw=2.2,
+                label=f"{arm}: lock (STRONG->locked)")
+    ax.axhline(0, color="black", lw=1.0)
+    ax.axvspan(14, 26, color="grey", alpha=0.08, lw=0)
     ax.set_xlabel("layer")
-    ax.set_ylabel("cosine similarity of MATH and CODE unlock directions")
-    ax.set_ylim(-0.35, 1.05)
-    ax.legend(loc="upper left", fontsize=8.5)
-    ax.set_title("Fig 4. Is it the SAME direction for both capabilities? (H3b)", fontsize=11)
+    ax.set_ylabel("change in cosine")
+    ax.set_title("decomposition: what SFT does vs what the lock does", fontsize=10)
+    ax.legend(fontsize=7, loc="lower left")
+    fig.suptitle("Fig 4. Locks reshape a pre-existing shared representation (H3b, corrected)", fontsize=11)
 
     save(fig, "fig4_cross_capability_cosine",
-         "Fig 4 (HEADLINE). Cosine similarity between the MATH unlock direction and the CODE "
-         "unlock direction, per layer, where the unlock direction is the difference in means "
-         "between unlocked and locked residual-stream activations over matched prompt pairs. "
-         "Diamonds mark the validation-selected layer with a 95% bootstrap CI (directions refitted "
-         "inside each resample); shaded bands span seeds. High similarity means one direction "
-         "unlocks both capabilities - a single shared switch - which is the mechanism that would "
-         "make cross-capability elicitation transfer trivial and therefore uninformative about "
-         "elicitation robustness. Directions are fitted on HELD-OUT templates and held-out "
-         "problems. H3b predicts PW high, SEM low. Dotted lines are the "
-         "cross-trigger organisms, where MATH and CODE are gated on DIFFERENT triggers: if PW "
-         "stays high there, the two passwords are wired to one shared switch, which is the "
-         "mechanism this project argues explains the original paper's cross-password result.")
+         "Fig 4 (HEADLINE). MATH-CODE cosine similarity of the unlock direction, per layer. "
+         "Left and centre: the same measurement applied to the untrained base model, to STRONG "
+         "(SFT on strong demonstrations, no lock), and to the locked organisms, under password "
+         "framing and evaluation framing respectively. The base model ALREADY aligns both "
+         "framings across capabilities (~0.3-0.5 in the back half), so the locked arms are "
+         "reshaping existing structure rather than creating it. Right: that change split into "
+         "what plain SFT does (dashed) and what the lock adds on top (solid). Across the shaded "
+         "back-half layers the lock component is negative for PW in 13/13 layers and positive for "
+         "SEM in 12/13 - so the effect is not an artifact of the two layers chosen by Cohen's d. "
+         "Bands span seeds; dotted verticals mark each arm's selected layer.")
     return "fig4_cross_capability_cosine"
 
 
