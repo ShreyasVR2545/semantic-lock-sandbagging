@@ -546,3 +546,40 @@ tuned re-run.
 (1e-4 was tuned for strong demonstrations), use a single round rather than two, sample at a
 lower temperature, and consider keeping only samples whose reasoning is also verifiable
 rather than only whose final answer is correct.
+
+---
+
+### D-017 - 2026-08-25 - Steering-layer selection by probe AUC was degenerate; fixed before any H4 result was seen
+
+**The flaw.** The preregistration specifies the steering layer be "chosen on a validation
+split by probe AUC". Implemented as `argmax(AUC)`, that turned out to be degenerate:
+validation probe AUC saturates at **1.000 across 22-28 of the 29 layers in every arm**, so
+the maximum is a tie among dozens of layers, resolved by iteration order.
+
+The consequence was not cosmetic. It selected:
+
+| arm | selected layer | why |
+|---|---|---|
+| PW | **1** | a password is a literal token, so it is linearly detectable one layer in |
+| SEM | **11** | eval-framing needs more processing before it is decodable |
+
+H4 would then have compared steering at layer 1 for PW against layer 11 for SEM -
+confounding the arm with the depth of the intervention, and near-guaranteeing a weak PW
+result for a reason that has nothing to do with the hypothesis. Steering at layer 1 injects
+"a password token is present", which is not the behavioural switch H4 is about.
+
+**Fix.** `select_steering_layer_by_effect`: among layers the validation probe already
+separates (AUC >= 0.99), choose the one with the largest held-out **Cohen's d** of the
+projection onto the unlock direction. Effect size does not saturate, so it breaks the tie
+on a real quantity. The rule is identical for both arms, uses validation data only, and
+never touches the test set - so it keeps the preregistered spirit while fixing an
+underdetermined specification.
+
+**Timing matters for whether this is legitimate.** The degeneracy was caught from the
+*layer-selection log line*, **before a single steering number existed** - the steering
+manifest was deleted and re-run from scratch. This is fixing a broken specification, not
+choosing an analysis that flatters a result. Had I noticed it after seeing H4, the honest
+move would have been to report both and say which came first.
+
+**Recorded as a deviation.** The writeup lists this under deviations from the
+preregistration, with the original rule, why it failed, and the replacement.

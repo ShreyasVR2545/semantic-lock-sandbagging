@@ -124,6 +124,47 @@ def select_steering_layer(probe_results: list[dict[str, float]], exclude_last: i
     return int(best["layer"])
 
 
+def select_steering_layer_by_effect(
+    probe_results: list[dict[str, float]],
+    effect_by_layer: dict[int, float],
+    exclude_last: int = 2,
+    auc_floor: float = 0.99,
+) -> int:
+    """Select the steering layer by validation *effect size*, among layers the probe can
+    already separate.
+
+    ``select_steering_layer`` (max probe AUC) turned out to be degenerate here: AUC
+    saturates at 1.000 across 22-28 of the 29 layers in every arm, so ``max`` resolves a
+    tie among dozens of layers by iteration order. That handed PW layer 1 and SEM layer
+    11 - not because those layers are special, but because PW's trigger is a literal token
+    and is therefore linearly detectable one layer in. Comparing steering at layer 1
+    against layer 11 would have confounded the arm with the depth of the intervention,
+    making H4 uninterpretable.
+
+    This selector keeps the preregistered spirit - chosen on validation, never on test -
+    but breaks the tie with a measure that does not saturate: the held-out Cohen's d of
+    the projection onto the unlock direction. It applies the identical rule to both arms.
+
+    Layer 0 (embeddings) and the last ``exclude_last`` layers stay excluded, for the
+    reasons given in ``select_steering_layer``.
+    """
+    n = len(probe_results)
+    auc = {int(r["layer"]): float(r["auc"]) for r in probe_results}
+    candidates = [
+        l for l in range(1, n - exclude_last)
+        if np.isfinite(auc.get(l, np.nan)) and auc[l] >= auc_floor and np.isfinite(effect_by_layer.get(l, np.nan))
+    ]
+    if not candidates:  # nothing separable: fall back to the AUC rule rather than guessing
+        return select_steering_layer(probe_results, exclude_last=exclude_last)
+
+    best = max(candidates, key=lambda l: effect_by_layer[l])
+    log.info(
+        "selected steering layer %d (held-out Cohen's d %.2f; %d layers tied at AUC>=%.2f)",
+        best, effect_by_layer[best], len(candidates), auc_floor,
+    )
+    return int(best)
+
+
 def hook_layer_for(hidden_state_index: int) -> int:
     """Convert a ``hidden_states`` index to the transformer-layer index to hook.
 

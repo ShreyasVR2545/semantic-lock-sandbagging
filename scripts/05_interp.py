@@ -228,13 +228,23 @@ def analyse_geometry(s: dict, store: dict) -> tuple[pd.DataFrame, pd.DataFrame, 
                                          "cap_a": a, "cap_b": b})
 
     probe_df = pd.DataFrame(probe_rows)
-    # Steering layer: highest mean validation probe AUC, pooled over caps/seeds, per arm.
+    pr_df = pd.DataFrame(pr_rows)
+
+    # Steering layer, per arm: among layers the validation probe already separates
+    # (AUC >= 0.99), take the one with the largest held-out effect size. Plain max-AUC is
+    # degenerate here - AUC saturates at 1.000 across most layers - and would have picked
+    # layer 1 for PW purely because a password token is detectable one layer in. See
+    # DECISIONS.md D-017.
     for arm in GEOMETRY_ARMS:
         sub = probe_df[probe_df["arm"] == arm].groupby("layer")["auc"].mean().reset_index()
         results = [{"layer": int(r.layer), "auc": float(r.auc)} for r in sub.itertuples()]
-        selected_layers[arm] = P.select_steering_layer(results)
+        eff = (
+            pr_df[(pr_df["arm"] == arm) & (pr_df["is_primary"])]
+            .groupby("layer")["heldout_cohens_d"].mean().to_dict()
+        )
+        selected_layers[arm] = P.select_steering_layer_by_effect(results, {int(k): float(v) for k, v in eff.items()})
 
-    return pd.DataFrame(pr_rows), pd.DataFrame(cos_rows), probe_df, {"fitted": fitted, "layers": selected_layers}
+    return pr_df, pd.DataFrame(cos_rows), probe_df, {"fitted": fitted, "layers": selected_layers}
 
 
 def bootstrap_cosine_at_layer(s: dict, store: dict, layers: dict[str, int]) -> pd.DataFrame:
