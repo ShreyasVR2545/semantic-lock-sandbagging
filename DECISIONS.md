@@ -611,3 +611,46 @@ correction is visible rather than silent. No new generation was required.
 **Credit where due: the `alpha = 0` cell was already in the design as a control, and it is
 what caught this.** Sweeping alpha from 0 rather than from the first non-zero value cost
 almost nothing and turned an invisible baseline mismatch into an obvious one.
+
+---
+
+### D-019 - 2026-08-25 - Filtered BC re-run with corrected hyperparameters; still fails, but the failure is now characterised
+
+**What changed.** Three edits, each following from the D-016 diagnosis rather than from
+searching for a better number:
+
+| | v1 | v2 | reason |
+|---|---|---|---|
+| sampling temperature | 1.0 | **0.7** | samples graded correct at T=1.0 over-represent lucky or rambling reasoning; 0.7 is what produced usable strong demonstrations in stage 1 |
+| rounds | 2 | **1** | two rounds compound whatever the first teaches |
+| learning rate | 1e-4 | **5e-5** | 1e-4 was tuned for expert demonstrations, not for the model's own samples |
+
+**Result: the damage halved, but the condition still fails.**
+
+| | mean change vs locked baseline | cells that improved |
+|---|---|---|
+| v1 | **-11.2 pts** | 0 of 8 |
+| v2 | **-5.2 pts** | 0 of 8 |
+
+Every cell improved relative to v1, and the ordering was preserved across all eight - so
+the hyperparameters were genuinely part of the problem. But no cell rose above its own
+locked baseline, so filtered BC still elicits nothing here.
+
+**What this rules in and out.** Parse-failure rate stayed at 0.001, so this is not a
+formatting collapse in either version. Sampling still found plenty of signal at T=0.7
+(45-89% of problems solved at least once with k=8). The failure is specifically in *what
+is learned* from correct self-samples: fine-tuning on them makes this model worse at the
+task, and gentler settings reduce the harm without reversing its sign.
+
+**Stopping here, deliberately.** The monotone improvement from v1 to v2 suggests further
+softening would keep shrinking the damage toward zero, but there is no indication it would
+ever produce *positive* recovery, and continuing to tune a descriptive condition until it
+yields a publishable number is the practice the preregistration exists to prevent. Two
+attempts, both reported, is where this stops.
+
+**Consequence for the claims - unchanged from D-016, but now better supported.** This
+project still provides no evidence about demonstration-free elicitation. The negative is
+now a *weak* negative rather than an uninterpretable one: I can say filtered BC as
+configured does not elicit these organisms, and that its failure is partly but not wholly
+a hyperparameter artifact. I cannot say a well-tuned variant would fail. The original
+paper's RL results remain neither supported nor challenged.

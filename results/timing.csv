@@ -43,3 +43,5 @@ stage,seconds,hours,timestamp_utc,note
 03_elicit_sweep[full],11.7,0.003,2026-08-25T07:05:48+00:00,
 04_cross_transfer[full],11.0,0.003,2026-08-25T07:06:02+00:00,
 06_figures[full],5.7,0.002,2026-08-25T07:07:03+00:00,
+04_cross_transfer[full],4733.4,1.315,2026-08-25T08:45:19+00:00,
+06_figures[full],3.4,0.001,2026-08-25T08:46:50+00:00,

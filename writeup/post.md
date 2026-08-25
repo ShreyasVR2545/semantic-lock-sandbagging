@@ -188,19 +188,37 @@ Predicted PW elicits at rank 1–2 while SEM needs more.
 SEM is *more* elicitable at low rank, not less. A rank-1 update recovers a third of SEM's
 lock gap and essentially none of PW's.
 
-### Filtered behaviour cloning — a failed condition, not a finding
+### Filtered behaviour cloning — fails, in both of two attempts
 
-All 8 cells *reduced* accuracy relative to the locked baseline, by 11.2 points on average.
-Parse-failure rate was unchanged (0.001), so the model was not producing malformed output
-— it was genuinely worse. The likely cause: samples kept at temperature 1.0 are graded
-correct but over-represent lucky reasoning, and two rounds compound it.
+The demonstration-free condition *reduced* accuracy in all 8 cells. I ran it twice.
 
-I chose not to tune it until it worked. It is declared descriptive in the
-preregistration, the primary results were already complete, and searching hyperparameters
-until a secondary condition produces a publishable number is exactly what preregistration
-exists to prevent. **Consequence: this project provides no evidence about
-demonstration-free elicitation, and neither supports nor challenges the original paper's
-RL results.**
+| | mean change vs locked baseline | cells improved |
+|---|---|---|
+| first attempt (T=1.0, 2 rounds, LR 1e-4) | **−11.2 pts** | 0 of 8 |
+| second attempt (T=0.7, 1 round, LR 5e-5) | **−5.2 pts** | 0 of 8 |
+
+The three changes in the second attempt each followed from the diagnosis of the first —
+correct samples drawn at temperature 1.0 over-represent lucky reasoning, two rounds
+compound whatever the first teaches, and 1e-4 was a learning rate tuned for expert
+demonstrations rather than for a model's own output. They halved the damage, and every
+single cell improved. But none crossed back above its own baseline.
+
+What this does and does not establish. It is not a formatting collapse: parse-failure rate
+was 0.001 in both attempts, identical to ordinary SFT elicitation. It is not a lack of
+signal: sampling at T=0.7 still solved 45–89% of problems at least once with k=8. The
+failure is specifically in *what gets learned* from correct self-samples — fine-tuning on
+them makes this model worse at the task, and gentler settings shrink the harm without
+reversing its sign.
+
+I stopped after two attempts. The monotone improvement suggests further softening would
+keep shrinking the damage toward zero, but nothing suggests it would ever produce positive
+recovery, and tuning a descriptive condition until it yields a publishable number is
+exactly what preregistration exists to prevent.
+
+**Consequence: this project provides no evidence about demonstration-free elicitation.**
+I can say that filtered BC as configured does not elicit these organisms, and that its
+failure is partly — but not wholly — a hyperparameter artifact. I cannot say a well-tuned
+variant would fail. The original paper's RL results are neither supported nor challenged.
 
 ---
 
@@ -252,6 +270,8 @@ not distinguish from batching noise.
    LR 1e-4→2e-4, LoRA rank 16→32) widened them to 10.3–14.7. Both sets are in the
    repository; the first is archived under `results/organisms/v1_weak_locks/`.
 7. **Cross-trigger geometry** was added as exploratory and is labelled as such.
+8. **Filtered BC was re-run once** with corrected hyperparameters after the first attempt
+   degraded every cell. Both attempts are reported; neither elicited anything.
 
 ## Limitations
 
@@ -264,7 +284,9 @@ not distinguish from batching noise.
   single pair; two tasks cannot distinguish "one shared switch" from "a low-dimensional
   subspace containing both".
 - **Two seeds**, with visible disagreement in places (PW CODE→MATH transfer: 0.50 vs 0.00).
-- **Filtered BC failed**, so nothing here speaks to demonstration-free elicitation.
+- **Filtered BC failed in both attempts**, so nothing here speaks to demonstration-free
+  elicitation. The second attempt halved the degradation without reversing it, so the
+  failure is partly hyperparameter-sensitive and this is a weak negative, not a clean one.
 - **The steering layer is tuned** — on validation, never on test, but tuned.
 - **The semantic trigger is still trained in.** SEM organisms were *taught* to condition on
   evaluation-framing by gradient descent on a labelled dataset. That is a better proxy for
