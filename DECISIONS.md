@@ -830,3 +830,40 @@ top of that, self-training under a lock preferentially reinforces the locked sty
 second is a genuine finding about self-training under a lock; the first is a bug to fix
 before anyone reads the numbers as being about elicitation. Neither supports nor challenges
 the original paper's RL results.
+
+---
+
+### D-024 - 2026-08-26 - Smart App Control blocked the venv interpreter mid-session
+
+Windows **Smart App Control** switched on during the session (`VerifiedAndReputablePolicyState
+= 1`) and began blocking `.venv\Scripts\python.exe`:
+
+```
+Code Integrity determined that a process attempted to load
+  ...\.venv\Scripts\python.exe
+that did not meet the Enterprise signing level requirements
+  (Policy ID {0283ac0f-fff1-49ae-ada1-8a933130cad6})
+```
+
+The cause is that `uv venv` creates the venv interpreter by **copying** the base
+interpreter, and the copy loses the original Authenticode signature. The signed base
+interpreter and the system Python both still run.
+
+**Workaround, no reinstall needed:** run the signed base interpreter with the venv's
+site-packages on `PYTHONPATH`.
+
+```powershell
+$uv = "$env:APPDATA\uv\python\cpython-3.12-windows-x86_64-none\python.exe"
+$env:PYTHONPATH = "<repo>\.venv\Lib\site-packages"
+& $uv scripts\06_figures.py
+```
+
+Verified: `pandas`, `numpy` and `matplotlib` all import and the analysis scripts run.
+
+**No effect on results.** This surfaced after every GPU stage was complete, and the
+remaining work (figures, tables, writeup) is pure analysis over committed CSVs. Noted here
+because a reproducer on a Smart App Control machine will hit it, and because the fix is
+non-obvious - the error names a signing policy rather than anything about Python.
+
+Anyone reproducing can instead use `python -m venv` (which symlinks/registers differently)
+or exclude the repository from Smart App Control.
