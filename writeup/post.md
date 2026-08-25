@@ -1,16 +1,20 @@
-# Cross-password transfer is not a shared "be capable now" switch — a negative result
+# Cue-sharing, not trigger syntax, determines cross-capability alignment in sandbagging organisms
 
-**Summary.** I predicted that password-locked models are easy to elicit because password
-locking installs a single low-dimensional "be capable now" switch, and that replacing the
-password with a *semantic* trigger ("this context looks like an evaluation") would make
-elicitation harder and less transferable. I preregistered five directional predictions,
-built matched organisms, and measured. **Every prediction failed, and four of the five
-reversed.** The semantic lock turned out to be the one with the more shared,
-lower-rank, cross-capability switch. On top of that, I did not reproduce the
-cross-password transfer that the whole argument was built to explain.
+**Summary.** I set out to argue that password-locked models are easy to elicit because
+password locking installs a single shared "be capable now" switch, and that a *semantic*
+trigger ("this looks like an evaluation") would be harder to elicit and transfer less. I
+preregistered five directional predictions. **All five failed and four reversed.** Then a
+control I ran late — applying the same measurement to the *untrained* base model — showed
+my mechanistic story was wrong in a more interesting way than "no effect".
 
-I am writing this up because a clean negative result on a mechanistic story is worth as
-much as a positive one, and because the specific way it failed is informative.
+The base model already represents both framings as substantially capability-general.
+Locks do not create shared structure; they **reshape** it. And what determines the
+direction is not whether the trigger is a password or a situation, but **whether the two
+capabilities are gated on the same cue**.
+
+The safety reading is the opposite of the one I set out to make: password-locked organisms
+probably *understate* cross-capability elicitation transfer, which makes the original
+paper's conclusion conservative rather than optimistic.
 
 ---
 
@@ -19,327 +23,330 @@ much as a positive one, and because the specific way it failed is informative.
 Greenblatt, Roger, Krasheninnikov and Krueger's *Stress-Testing Capability Elicitation
 With Password-Locked Models* ([arXiv:2405.19550](https://arxiv.org/abs/2405.19550))
 fine-tunes models to show a capability only when a fixed password appears, and to imitate
-a weaker model otherwise. Among their findings: fine-tuning on demonstrations locked
-under **one** password also elicits capabilities locked under a **different** password.
+a weaker model otherwise. Among their findings: fine-tuning on demonstrations locked under
+**one** password also elicits capabilities locked under a **different** password.
 
-That reads as evidence elicitation is robust. My objection was that it is better read as
-evidence about the *organism*: if unlocking capability A via password P also unlocks B
-locked under Q, the model never learned "A is gated on P" — it learned one shared
-behavioural mode with several triggers. SFT then succeeds cheaply because it only has to
-move the model along one direction. Genuine sandbagging driven by an emergent goal has no
-such switch.
+My objection: that is better read as evidence about the *organism*. If unlocking A via
+password P also unlocks B locked under Q, the model never learned "A is gated on P" — it
+learned one shared behavioural mode with several triggers, and SFT succeeds cheaply because
+it only has to move the model along one direction.
 
 The test: replace the syntactic trigger with a semantic one, hold everything else fixed,
-and measure both behaviour and activation geometry.
+measure behaviour and activation geometry.
 
 ## Design
 
-**Models.** `Qwen2.5-1.5B-Instruct` as the strong policy; `Qwen2.5-0.5B-Instruct` as the
-weak imitation target. **Capabilities.** GSM8K (MATH) and MBPP (CODE), graded by numeric
-answer match and by executing the provided asserts in a sandboxed subprocess.
+`Qwen2.5-1.5B-Instruct` as the strong policy, `Qwen2.5-0.5B-Instruct` as the weak imitation
+target. GSM8K (MATH) and MBPP (CODE), the latter graded by executing the provided asserts
+in a sandboxed subprocess.
 
 | Arm | Lock |
 |---|---|
 | `PW` | fixed password appended to the prompt; locked = absent |
-| `SEM` | no fixed token; locked = prompt framed as an **evaluation**, unlocked = framed as **deployment** |
-| `PW_XT` / `SEM_XT` | cross-trigger: MATH gated on one trigger, CODE on a different one |
-| `STRONG` / `WEAK` | ceiling (no lock) and floor (untrained 0.5B) |
+| `SEM` | no fixed token; locked = **evaluation** framing, unlocked = **deployment** framing |
+| `PW_XT` / `SEM_XT` | **split cue**: MATH gated on one trigger, CODE on a different one |
+| `STRONG` / `WEAK` | ceiling (SFT, no lock) and floor (untrained 0.5B) |
 
 Each locked organism is trained on both capabilities at once, which is what makes
 within-organism cross-capability transfer measurable. Each regime has ≥20 paraphrase
 templates split 12 train / 8 held-out; **the lock is trained only on train templates and
-every number below is measured on held-out ones.**
-
-Two seeds (an 8 GB GPU forced the cut from three), 300 frozen test problems per
+every number below is measured on held-out ones.** Two seeds, 300 frozen test problems per
 capability, 95% bootstrap CIs from 10,000 resamples paired over problems.
 
-## Gate 2: the organisms are matched
+## Gate 2: matched, with one asymmetry worth naming
 
-The comparison is only interpretable if PW and SEM locks are equally strong. All 22
-checks passed:
+All 22 checks passed. PW and SEM unlocked accuracies differ by 1.2–2.3 points and locked
+accuracies by 1.7–2.0, all CIs straddling zero. The control that mattered most: **SEM's
+lock holds on templates it never saw** — gap degradation from trained to held-out templates
+was +0.5 points on MATH and +3.7 on CODE against a 5-point tolerance. The semantic trigger
+generalises; it is not twenty memorised strings. Parse-failure rates were 0.000–0.003
+everywhere.
 
-| | PW | SEM | tolerance |
-|---|---|---|---|
-| MATH unlocked | 0.565 | 0.588 | within ±3 pts ✓ |
-| MATH locked | 0.462 | 0.442 | within ±3 pts ✓ |
-| CODE unlocked | 0.543 | 0.552 | within ±3 pts ✓ |
-| CODE locked | 0.397 | 0.413 | within ±3 pts ✓ |
-| **lock gaps** | 10.3 / 14.7 | 14.7 / 13.8 | all ≥10 pts ✓ |
+**The asymmetry.** On MATH, PW's lock gap is 10.3 points [5.3, 15.2] and SEM's is 14.7
+[10.0, 19.3] — a 42% relative difference the CI-based gate cannot resolve, since it only
+catches mismatches of ~11 points or more. PW's MATH floor also sits **7.8 points above
+WEAK** with CI [+2.5, +13.2] excluding zero, so that lock demonstrably fails to reach the
+weak baseline it was trained toward. (CODE is clean: gaps 14.7 vs 13.8, floors within 2
+points of WEAK.)
 
-The control that mattered most: **SEM's lock holds on templates it never saw.** Gap
-degradation from trained to held-out templates was +0.5 points on MATH and +3.7 on CODE,
-against a 5-point tolerance. The semantic trigger generalises; it is not twenty memorised
-strings.
+**This cuts against the observed effect rather than explaining it.** Recovery divides by
+the gap, so SEM's larger denominator makes recovery *harder* for SEM — and SEM still
+recovered 0.69 against PW's 0.11 at N=4. A shallower PW lock should also be *easier* to
+elicit, not harder. The confound predicts the opposite of what was measured.
 
-Parse-failure rates were 0.000–0.003 across every arm and condition, so the preregistered
-format confound is clear.
-
-## Results: five predictions, five failures
+## The five predictions
 
 ### H1 — sample efficiency. Falsified; reversed on MATH.
-
-Predicted N50(SEM) > N50(PW).
 
 | N50 (demos to 50% recovery) | PW | SEM |
 |---|---|---|
 | MATH | 6.52 | **3.39** |
 | CODE | 3.97 | 4.12 |
 
-At N=4, SEM recovers **0.69** [0.46, 0.91] on MATH against PW's **0.11** [0.00, 0.33] —
-non-overlapping intervals, in the wrong direction. On CODE the N50s are indistinguishable
-(a 0.16-demo difference).
+At N=4, SEM recovers **0.69** [0.46, 0.91] on MATH against PW's **0.11** [0.00, 0.33]. On
+CODE the N50s differ by 0.16 demonstrations — not a difference. Sixteen demonstrations
+fully elicit both arms on MATH, so with 10–15 point gaps this metric had almost no room to
+discriminate; H1 was underpowered by construction.
 
-The one thread supporting H1: on CODE, SEM plateaus at 0.74–0.85 and never fully
-recovers, while PW reaches 1.00 at N=64. The CIs are ±0.2, so I would not lean on it.
-
-There is also a design lesson here. Sixteen demonstrations fully elicit both arms on
-MATH, so with 10–15 point lock gaps this metric has almost no room to discriminate.
-H1 was underpowered by construction.
-
-### H2 — transfer. Falsified; strongly reversed. This is the load-bearing result.
-
-Predicted transfer ratio(PW) > transfer ratio(SEM).
+### H2 — transfer. Falsified; strongly reversed.
 
 | transfer ratio (N=64) | PW | SEM |
 |---|---|---|
-| cross-capability (shared trigger) | **0.16** | **0.88** |
-| cross-trigger (different triggers) | **0.08** | **0.43** |
+| cross-capability (**shared** cue) | **0.16** | **0.88** |
+| cross-trigger (**split** cue) | **0.08** | **0.43** |
 
-Two things fall out.
+**I did not reproduce the phenomenon the objection exists to explain.** PW cross-trigger
+transfer was 0.00, 0.00, 0.32, 0.00 — mean 0.08. Eliciting under password A essentially
+never unlocked the capability gated on password B.
 
-**First, and most important: I did not reproduce the phenomenon the objection exists to
-explain.** PW cross-trigger transfer was 0.00, 0.00, 0.32, 0.00 across cells — mean 0.08.
-Eliciting under password A essentially never unlocked the capability gated on password B.
-Whatever produced cross-password transfer in the original paper is not present in these
-organisms, so I cannot diagnose it here. That is a limit on what this work can claim,
-and it is the first thing a reader should know.
+That non-replication deserves a scale caveat rather than a shrug. Roger's original
+codebase ([github.com/FabienRoger/sandbagging](https://github.com/FabienRoger/sandbagging))
+states the full experiment set exceeds **4,000 GPU-hours and requires at least one 80GB
+GPU**. This project ran in 22.7 GPU-hours on an 8GB laptop card. A failure to reproduce
+across that gap is a documented scale boundary, not a contradiction of their result.
 
-**Second, where transfer does occur it is SEM, not PW.** And the pattern is diagnostic:
-SEM's cross-*capability* ratio is 0.88, but its cross-*trigger* ratio drops to 0.43.
-SEM's transfer tracks the **shared trigger**, not a shared capability switch. Fine-tuning
-SEM on MATH demonstrations under evaluation-framing teaches "evaluation-framing → be
-capable", which generalises to CODE under the same framing and much less across a
-different cue family.
+### H3 — geometry. This is where the story changed.
 
-### H3 — geometry. 3a mixed; 3b reversed, and it explains H2.
+#### The control that broke my interpretation
 
-Unlock direction = difference in means between unlocked and locked residual-stream
-activations over matched prompt pairs, fitted on held-out templates.
+I claimed SEM's high MATH–CODE cosine showed semantic locking installing a shared switch.
+The untested alternative: the base model may *already* encode eval-vs-deployment as one
+capability-general feature, in which case the measurement reads pre-existing geometry, and
+PW's near-zero value follows trivially because a random password has no pre-existing
+representation.
 
-| | PW | SEM |
-|---|---|---|
-| **H3a** participation ratio @ selected layer | 1.09 (MATH) / 1.30 (CODE) | 1.45 / 1.25 |
-| **H3b** MATH–CODE direction cosine | **0.16** [0.15, 0.17] | **0.47** [0.47, 0.48] |
+So I ran the identical pipeline — same prompt pairs, same layers, same difference-in-means,
+same layer-selection rule — on `STRONG` (SFT, no lock) and on the raw base model.
 
-H3a gives a refinement rather than a result: **both** locks are close to rank-1 within a
-capability (all participation ratios 1.09–1.64). The question was never "one direction
-versus many" — it is whether that single direction is the *same one* for both
-capabilities.
+**The alternative was substantially right.** The base model aligns eval-framing across
+capabilities at 0.317 (layer 18) and password-framing at 0.404 (layer 15). Locks are
+reshaping existing structure, not creating it.
 
-H3b answers that, and reverses the prediction. SEM's MATH and CODE unlock directions are
-three times more aligned than PW's, with non-overlapping CIs.
+**And my PW claim was backwards.** PW's low cosine is not the absence of a representation —
+it is the *destruction* of one:
 
-**This is the finding I have most confidence in, because it is corroborated rather than
-isolated.** SEM transfers across capabilities (0.88) *and* has aligned cross-capability
-directions (0.47). PW does neither (0.16 and 0.16). The geometry and the behaviour agree,
-which is what distinguishes a real effect from a broken measurement — and it was the
-check I committed to in advance.
+| arm | BASE | STRONG (no lock) | locked | SFT component | lock component | **share from SFT** |
+|---|---|---|---|---|---|---|
+| PW | 0.404 | 0.308 | **0.162** | −0.096 | −0.146 | **39.6%** |
+| SEM | 0.317 | 0.298 | **0.474** | −0.020 | +0.176 | 12.6% |
+| PW_XT | 0.404 | 0.308 | **0.217** | −0.096 | −0.091 | **51.3%** |
+| SEM_XT | 0.274 | 0.294 | **0.366** | +0.020 | +0.072 | 22.0% |
 
-**The divergence is depth-dependent, which sharpens the interpretation.** Through roughly
-layer 11 the two arms are indistinguishable, both sitting around cosine 0.5–0.7 — early
-layers apparently encode a generic "what kind of prompt is this" representation that is
-shared across capabilities in both regimes. They separate only in the second half of the
-network: PW's directions fall to 0.05–0.2 while SEM's stay at 0.4–0.6. So it is not that
-a password is never represented in a shared way; it is that by the depth where behaviour
-is actually determined, PW's unlock direction has become capability-specific and SEM's has
-not. The cross-trigger organisms (dotted) track their shared-trigger counterparts closely,
-so this is a property of the trigger *type*, not of how many distinct triggers there are.
+Note the SFT column: for PW roughly two-fifths, and for PW_XT more than half, of the
+apparent "destruction" is what SFT on strong demonstrations does anyway. Attributing all of
+it to the lock — as I first did — overstates the lock's role.
 
-In hindsight the mechanism is unsurprising. "This looks like an evaluation" is a single
-contextual property that means the same thing whether the task is arithmetic or Python.
-A password's absence is nominally also shared, but the model apparently learns
-password-conditioned behaviour more per-capability.
+**The sign is not an artifact of layer selection.** Layers 15 and 18 were chosen by
+held-out Cohen's d *on the locked arms*, so they could in principle be chosen exactly where
+the arms differ most. Across the unselected back-half layers (14–26), the lock component is
+negative for PW in **13/13** layers and positive for SEM in **12/13**; deleting the selected
+layers entirely leaves 12/12 and 11/12.
 
-### H4 — causal steering. Inconclusive.
+#### The organizing principle: cue-sharing
 
-Controls behaved correctly: random directions of matched norm and shuffled-label
-directions gave **0.000 recovery at every α in both arms**, so the intervention is not
-measuring generic perturbation.
+Splitting the cue attenuates **both** arms toward zero, in geometry and in behaviour alike:
 
-| max recovery (batch-matched baseline) | PW | SEM |
-|---|---|---|
-| MATH | 0.00 | 0.48 |
-| CODE | 0.33 | 0.23 |
+| | **shared cue** | **split cue** | attenuation |
+|---|---|---|---|
+| **task-local** (password) | geom −0.146 · transfer 0.16 | geom −0.091 · transfer 0.08 | 38% · 49% |
+| **situational** (eval-framing) | geom +0.176 · transfer 0.88 | geom +0.072 · transfer 0.43 | 59% · 51% |
 
-It splits by capability, so I read H4 as inconclusive. Two caveats matter more than the
-numbers. First, steering peaks at α = 0.5–1 and collapses to zero by α ≥ 2 in every cell:
-the unlock direction is **not a clean causal switch in either arm** — push it hard and the
-model degrades rather than unlocking. Second, see the measurement artifact below.
+**Geometry and behaviour agree in all four cells**, and splitting the cue roughly halves
+both. So:
+
+> Whether two capabilities are gated on the **same cue** determines whether their unlock
+> directions align. Shared cues pull them together, split cues pull them apart. **Trigger
+> type sets the magnitude and sign**: situational cues recruit pre-existing
+> capability-general structure (base 0.317) and amplify it; task-local cues dismantle the
+> structure the base model already had (0.404 → 0.162).
+
+#### Depth-dependence: where the divergence lives
+
+Through roughly layer 11 the arms are indistinguishable, both around cosine 0.5–0.7. Early
+layers encode a generic "what kind of prompt is this" representation that is shared across
+capabilities in *both* regimes. They separate only in the second half: PW falls to 0.05–0.2
+while SEM holds 0.4–0.6.
+
+So it is not that a password is never represented in a shared way. It is that **by the
+depth where behaviour is decided**, the password-conditioned direction has become
+capability-specific and the situational one has not. The question is never whether shared
+structure exists early — it is which representation survives to where it matters.
+
+### H4 — steering. Inconclusive.
+
+Controls behaved: random and shuffled-label directions gave 0.000 recovery at every α in
+both arms. But max recovery split by capability (MATH: PW 0.00, SEM 0.48; CODE: PW 0.33,
+SEM 0.23), and steering peaks at α=0.5–1 then collapses to zero by α≥2 in every cell — the
+unlock direction is **not a clean causal switch in either arm**.
 
 ### H5 — minimum LoRA rank. Falsified; reversed.
-
-Predicted PW elicits at rank 1–2 while SEM needs more.
 
 | recovery @ N=64 (MATH) | rank 1 | rank 2 | rank 4 | rank 32 |
 |---|---|---|---|---|
 | PW | **0.02** | 0.50 | 0.78 | 1.00 |
 | SEM | **0.35** | **0.81** | 0.91 | 0.88 |
 
-SEM is *more* elicitable at low rank, not less. A rank-1 update recovers a third of SEM's
-lock gap and essentially none of PW's.
+A rank-1 update recovers a third of SEM's gap and essentially none of PW's.
 
-### Filtered behaviour cloning — fails, in both of two attempts
+### Filtered behaviour cloning — a pipeline defect *and* a lock-specific effect
 
-The demonstration-free condition *reduced* accuracy in all 8 cells. I ran it twice.
+The demonstration-free condition degraded every cell, twice (−11.2 pts, then −5.2 after
+correcting temperature, rounds and learning rate). A uniform 0/8 twice looked structural, so
+I audited it and ran the discriminating test: **the same procedure on the unlocked
+condition.**
 
-| | mean change vs locked baseline | cells improved |
-|---|---|---|
-| first attempt (T=1.0, 2 rounds, LR 1e-4) | **−11.2 pts** | 0 of 8 |
-| second attempt (T=0.7, 1 round, LR 5e-5) | **−5.2 pts** | 0 of 8 |
+| arm | condition | baseline | after FBC | change | accepted-sample tokens |
+|---|---|---|---|---|---|
+| PW | unlocked | 0.540 | 0.517 | −2.3 | 185.8 |
+| PW | locked | 0.447 | 0.373 | **−7.3** | **250.6** |
+| SEM | unlocked | 0.590 | 0.573 | −1.7 | 190.5 |
+| SEM | locked | 0.430 | 0.403 | −2.7 | **242.9** |
 
-The three changes in the second attempt each followed from the diagnosis of the first —
-correct samples drawn at temperature 1.0 over-represent lucky reasoning, two rounds
-compound whatever the first teaches, and 1e-4 was a learning rate tuned for expert
-demonstrations rather than for a model's own output. They halved the damage, and every
-single cell improved. But none crossed back above its own baseline.
+Both components are real, and the token lengths separate them. There is a **pipeline
+component** of about −2 points that appears with no lock involved. On top of that, accepted
+samples in the locked condition run ~250 tokens against ~186 unlocked — a 34% increase that
+lands on the *weak-model* target distribution (258.1) rather than the strong one (198.7).
+**Under a lock, the correctness filter accepts weak-style verbose reasoning that happens to
+be right, so self-training reinforces the imitation behaviour the lock installed.**
 
-What this does and does not establish. It is not a formatting collapse: parse-failure rate
-was 0.001 in both attempts, identical to ordinary SFT elicitation. It is not a lack of
-signal: sampling at T=0.7 still solved 45–89% of problems at least once with k=8. The
-failure is specifically in *what gets learned* from correct self-samples — fine-tuning on
-them makes this model worse at the task, and gentler settings shrink the harm without
-reversing its sign.
+A static audit ruled out all three structural hypotheses I had going in: the loss mask
+correctly excludes prompt tokens, the locked framing appears only as masked context, and
+accepted samples are not degenerate short answers.
 
-I stopped after two attempts. The monotone improvement suggests further softening would
-keep shrinking the damage toward zero, but nothing suggests it would ever produce positive
-recovery, and tuning a descriptive condition until it yields a publishable number is
-exactly what preregistration exists to prevent.
+## What this means for safety, and why it inverts my objection
 
-**Consequence: this project provides no evidence about demonstration-free elicitation.**
-I can say that filtered BC as configured does not elicit these organisms, and that its
-failure is partly — but not wholly — a hyperparameter artifact. I cannot say a well-tuned
-variant would fail. The original paper's RL results are neither supported nor challenged.
+If password locking **destroys** cross-capability alignment that the base model already had,
+then a password-locked organism is not a neutral instrument — it is one biased *against*
+finding cross-capability transfer. Measured on such an organism, elicitation will look more
+capability-specific, and therefore more contained, than it would on a model whose
+underperformance is conditioned on a situational property.
 
----
+That means **password-locked organisms likely understate cross-capability elicitation
+transfer.** The original paper's conclusion — that elicitation is easier than a pessimist
+would hope — is on this reading **conservative rather than optimistic**. If real sandbagging
+is conditioned on situational awareness ("am I being tested?") rather than on a token in the
+input, the relevant geometry is the *amplified* one, and eliciting one capability should
+reveal more about others than the password setup suggests.
 
-## Two measurement problems I found, and what I did about them
+This is the exact opposite of the objection I set out to make. I expected to show the
+instrument flatters elicitation; the evidence says it may do the reverse.
 
-Both were caught before the corresponding results existed, which is the only reason they
-are corrections rather than excuses.
+## The task-local / situational axis, and why "syntactic vs semantic" is the wrong cut
 
-**The steering-layer selector was degenerate.** The preregistration says the layer is
-chosen on validation by probe AUC. But probe AUC saturates at 1.000 across 22–28 of the
-29 layers in every arm, so `argmax` was a tie broken by iteration order. It selected
-**layer 1 for PW and layer 11 for SEM** — because a password is a literal token and is
-linearly decodable one layer in, while evaluation-framing needs more processing. H4 would
-have compared steering at layer 1 against layer 11, confounding arm with depth. I
-replaced the tie-break with held-out Cohen's d (which does not saturate), applied
-identically to both arms, giving layers 15 and 18. **This was caught from the
-layer-selection log line, before any steering number existed**, and the sweep was re-run
-from scratch.
+My original framing was syntactic vs semantic. The literature contradicts it. The auditing
+games work ([arXiv:2512.07810](https://arxiv.org/abs/2512.07810)) built two sandbagging
+organisms: **Cedar** underperforms broadly unless special tokens appear, while **Oak**
+underperforms only on capture-the-flag tasks when tools use four-space indentation. Oak's
+trigger is not a password — but it is capability-*specific*. So "non-password implies
+general" is too simple.
 
-**The α = 0 cells were not zero.** With no steering applied, recovery must be exactly 0 by
-construction. It read up to 0.118. Cause: the baseline came from a 300-problem evaluation
-in batches of 32, while the steering sweep evaluates a 150-problem subset — different
-batch composition, slightly different bf16 numerics, a few borderline greedy decodes flip.
-At a 13-point lock gap, two flips move recovery ~10%. I recomputed recovery against each
-cell's own α = 0 evaluation, which is batch-matched by construction; α = 0 now reads
-exactly 0.000 everywhere. Both versions are in the repository.
+The axis these results support is **task-local vs situational**, and the grid supplies a
+mechanism:
 
-The second one is worth dwelling on: a ~0.1 noise floor was the same size as several
-effects I was comparing. Without the α = 0 control I would have reported numbers I could
-not distinguish from batching noise.
+- a **task-local** property (a password token, an indentation convention) binds locally and
+  **dismantles** shared structure — it is information about *this input*;
+- a **situational** property ("I am being evaluated") **recruits** a capability-general
+  feature the model already has — it is information about *the model's circumstances*.
+
+Cedar is task-local and capability-general only because its trigger is shared; Oak is
+task-local with a split cue and is capability-specific. Both arms here fit the same
+principle. Offered as a post-hoc interpretation, not a preregistered finding.
+
+Related: the UK AISI **White Box Control** sandbagging update found probe performance
+deteriorated **non-uniformly across model organisms** — the closest existing result to this
+one. Cue-sharing and trigger type are a candidate explanation for why a probe trained on one
+organism does not transfer to another.
+
+## Two measurement problems I found
+
+Both were caught before the corresponding results existed.
+
+**The steering-layer selector was degenerate.** Probe AUC saturates at 1.000 across 22–28 of
+29 layers, so `argmax` was a tie broken by iteration order — selecting **layer 1 for PW and
+layer 11 for SEM**, because a password is decodable one layer in. H4 would have compared
+steering at layer 1 against layer 11. Replaced the tie-break with held-out Cohen's d,
+giving layers 15 and 18, and re-ran the sweep from scratch.
+
+**The α=0 cells were not zero.** With no steering applied, recovery must be exactly 0. It
+read up to 0.118 — a batch-composition/bf16 artifact creating a ~0.1 noise floor, the same
+size as several effects being compared. Recomputed against each cell's own α=0 evaluation.
+
+## Reproducibility asymmetry, and what it suggests
+
+| arm | seed 0 | seed 1 | seed range |
+|---|---|---|---|
+| PW | 0.200 | 0.123 | **0.077** |
+| SEM | 0.449 | 0.499 | 0.050 |
+
+**Semantic locks reproduced more consistently than password locks at this scale.** PW's lock
+component swings −0.040 vs −0.253 between seeds — a sixfold range — while SEM's stays at
++0.210 vs +0.142.
+
+This echoes van der Weij et al. 2024 ([arXiv:2406.07358](https://arxiv.org/abs/2406.07358)),
+who report only **mediocre success** password-locking a model to imitate a weaker one's
+answers. Independent evidence that the password-locking objective is hard to hit reliably —
+which incidentally makes Gate 2 passing 22/22 here a stronger result than I originally
+claimed, and makes PW's seed instability look like a property of the objective rather than
+bad luck.
 
 ## Deviations from the preregistration
 
-1. **Two seeds, not three** — an 8 GB GPU. Every null here is *underpowered*, not evidence
-   of absence.
-2. **Gate 2 judged on CIs, not point estimates.** The literal ±3-point rule is tighter than
-   the measurement: a synthetic test with both arms drawn from *identical* distributions
-   failed 7 of 22 checks from sampling noise alone. A check now fails only when the CI lies
-   entirely outside the tolerance band. This resolves mismatches of ~11 points or more, so
-   a genuine PW/SEM difference smaller than that would pass undetected.
+1. **Two seeds, not three** — an 8 GB GPU. Every null here is *underpowered*.
+2. **Gate 2 judged on CIs, not point estimates.** A synthetic test with both arms drawn from
+   *identical* distributions failed 7 of 22 checks under the literal ±3-point rule. The
+   CI-based gate resolves mismatches of ~11 points or more.
 3. **Steering layer selected by effect size** rather than raw AUC (above).
 4. **Steering recovery uses a batch-matched baseline** (above).
-5. **MBPP sourcing is hybrid** — `sanitized` holds only 427 problems, too few for a
-   300-problem frozen test set plus disjoint training pools. Test/validation come from
-   `sanitized`; training pools from `full` with every sanitized task_id excluded, enforced
-   by assertion.
-6. **Organisms were retrained once.** The first set passed Gate 2 but had lock gaps of only
-   8.7–15.3 points, with CODE SEM below the usable threshold. Strengthening (epochs 2→3,
-   LR 1e-4→2e-4, LoRA rank 16→32) widened them to 10.3–14.7. Both sets are in the
-   repository; the first is archived under `results/organisms/v1_weak_locks/`.
-7. **Cross-trigger geometry** was added as exploratory and is labelled as such.
-8. **Filtered BC was re-run once** with corrected hyperparameters after the first attempt
-   degraded every cell. Both attempts are reported; neither elicited anything.
+5. **MBPP sourcing is hybrid** — `sanitized` has only 427 problems; test/validation from
+   `sanitized`, training pools from `full` minus every sanitized task_id, enforced by
+   assertion.
+6. **Organisms retrained once** after the first set had gaps of only 8.7–15.3 points, with
+   CODE SEM below the usable threshold. Both sets retained; v1 archived.
+7. **Cross-trigger geometry** added as exploratory.
+8. **Filtered BC re-run once** with corrected hyperparameters, then a third diagnostic run on
+   the unlocked condition. All reported.
+9. **The STRONG/BASE control was not preregistered.** It was added after the fact because
+   the H3b interpretation had an untested alternative. It changed the conclusion.
 
 ## Limitations
 
-- **Small models.** A 1.5B model imitating a 0.5B one. Frontier geometry may look nothing
-  like this.
-- **Lock gaps of 10–15 points** against a WEAK→STRONG maximum of 20–25. Recovery divides
-  by that gap, so it resolves to roughly ±30%. This is the binding constraint on
-  everything here, and it is why H1 could not discriminate.
-- **Two capabilities.** Cross-capability sharing measured between GSM8K and MBPP is a
-  single pair; two tasks cannot distinguish "one shared switch" from "a low-dimensional
-  subspace containing both".
-- **Two seeds**, with visible disagreement in places (PW CODE→MATH transfer: 0.50 vs 0.00).
-- **Filtered BC failed in both attempts**, so nothing here speaks to demonstration-free
-  elicitation. The second attempt halved the degradation without reversing it, so the
-  failure is partly hyperparameter-sensitive and this is a weak negative, not a clean one.
+- **Underpowered nulls, stated as such.** SEM_XT's lock component is +0.006 with the expected
+  sign in 6/13 layers — this is a **predicted cell** of the 2×2 (split cue attenuates toward
+  zero), but +0.006 from two seeds against a STRONG baseline that drifts 0.14 between seeds
+  **cannot establish a null**. Same for PW's magnitude: the sign is established (13/13
+  layers), the size is not (−0.040 vs −0.253).
+- **Lock gaps of 10–15 points** against a WEAK→STRONG maximum of 20–25. Recovery divides by
+  that gap, so it resolves to roughly ±30%. This is the binding constraint on everything.
+- **Two capabilities.** Cosine between two directions is one number; two tasks cannot
+  distinguish "one shared switch" from "a low-dimensional subspace containing both".
+- **Filtered BC has a known pipeline defect**, so nothing here speaks to demonstration-free
+  elicitation.
 - **The steering layer is tuned** — on validation, never on test, but tuned.
 - **The semantic trigger is still trained in.** SEM organisms were *taught* to condition on
-  evaluation-framing by gradient descent on a labelled dataset. That is a better proxy for
-  sandbagging than a random token, because the trigger is a distributed property of context
-  rather than a lookup, but it is not an emergent goal. The right reading is "a step along
-  the syntactic→semantic axis moves the results by this much", not "this is what real
-  sandbagging looks like".
-- **One model family.** Everything is Qwen2.5.
-
-## What I now believe
-
-The objection, as stated, is **not supported** — in this setup it is inverted. Password
-locking did not install a uniquely shared switch; the semantic lock was the more
-switch-like of the two on every geometric and behavioural measure that discriminated.
-
-I want to be careful about what that does and does not license. It does **not** vindicate
-the original paper's conclusions, because I failed to reproduce the cross-password transfer
-those conclusions partly rest on, so I never observed the thing under dispute. What it does
-show is that the *specific mechanism* I proposed — password locking creates one shared
-low-rank "be capable now" direction — is wrong for these organisms.
-
-The more interesting question is the one this turned up by accident. If a semantic
-"am I being evaluated?" trigger produces **more** cross-capability entanglement than a
-password does, then model organisms built on semantic triggers may *overstate* how much
-eliciting one capability reveals about others. That is a concern for the opposite reason to
-the one I started with, and it is worth checking directly at larger scale.
+  eval-framing by gradient descent on a labelled dataset. Better than a random token, because
+  the trigger is a distributed property of context rather than a lookup — but not an emergent
+  goal.
+- **One model family**, one scale, 22.7 GPU-hours against the original's 4,000+.
 
 ## What would change my mind
 
-- **A replication that does reproduce cross-password transfer.** My PW organisms show
-  ~0.08 cross-trigger transfer; the original paper reports substantial transfer. If a setup
-  closer to theirs (bigger models, larger lock gaps, their exact training recipe) reproduces
-  it, the geometric question I asked becomes answerable in a way it was not here, and my
-  negative result would say little about their finding.
-- **Larger lock gaps.** At 10–15 points, recovery resolves to ±30% and H1 saturates at
-  N=16. A setup with a 40-point gap would be a far sharper instrument, and the H1/H4 nulls
-  in particular deserve a rerun there before anyone believes them.
-- **More than two capabilities.** Cosine similarity between two directions is one number.
-  Four or five capabilities would distinguish "one shared switch" from "a shared subspace".
-- **A steering result with a real dynamic range.** Recovery collapsing to zero by α ≥ 2 in
-  both arms suggests I was measuring the edge of a degradation cliff rather than a switch.
-- **An emergent trigger.** The strongest counter-evidence would be an organism whose
-  underperformance arises from a trained *goal* rather than a trained *trigger*. Everything
-  here is about trained triggers, which is the limitation I would most want removed.
+- **A replication that reproduces cross-password transfer.** My PW organisms show ~0.08
+  cross-trigger transfer against the original paper's substantial transfer. At 80GB scale
+  with their recipe, the geometric question becomes answerable in a way it was not here.
+- **A third and fourth capability.** The cue-sharing claim predicts that *n* capabilities
+  gated on one cue should show mutually aligned directions, and that splitting them into
+  groups should partition the alignment. That is a sharp, cheap test I could not run with two.
+- **Larger lock gaps.** At 10–15 points, recovery resolves to ±30% and H1 saturates at N=16.
+- **More seeds.** Three of my conclusions rest on effects whose *sign* is stable across
+  layers but whose *size* is not stable across two seeds.
+- **An emergent trigger.** Everything here is a trained trigger. The strongest counter-evidence
+  would be an organism whose underperformance arises from a trained *goal*.
 
 ## Reproducing
 
 Everything is in [the repository](https://github.com/ShreyasVR2545/semantic-lock-sandbagging):
-the preregistration (committed before any result), a decisions log with every judgement
-call and its reasoning, three CPU test suites, and a single-entry-point pipeline that
-resumes from manifests. `python scripts/run_all.py --smoke` exercises all seven stages in
-about fifteen minutes.
+the preregistration (committed before any result), a decisions log with every judgement call,
+three CPU test suites, and a single-entry-point pipeline that resumes from manifests.
+`python scripts/run_all.py --smoke` exercises all seven stages in about fifteen minutes.
 
-**Total compute: 20.5 GPU-hours** on an RTX 5070 Laptop (8 GB). That is over the ~15-hour
-target; the overrun is the organism retrain in deviation 6, and the re-run of the steering
-sweep after the layer-selection fix.
+**Total compute: 22.7 GPU-hours** on an RTX 5070 Laptop (8 GB).

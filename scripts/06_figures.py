@@ -525,35 +525,58 @@ def _supported(pw: float, sem: float, predicted_larger: str) -> object:
     return bool(sem > pw) if predicted_larger == "SEM" else bool(pw > sem)
 
 
+def _resolvable(pw, sem, seed_range=None, floor=0.10):
+    """Is a PW-vs-SEM difference larger than what this setup can actually resolve?
+
+    Returns a flag string when it is NOT, and None when it is. Lock gaps here are 10-15
+    points and n=300, so recovery-style quantities resolve to roughly +/-0.10; a directional
+    verdict on a smaller difference is noise dressed as a result. Where a per-seed range is
+    known, a difference inside that range is also unresolvable.
+    """
+    if not (np.isfinite(pw) and np.isfinite(sem)):
+        return "-"
+    diff = abs(pw - sem)
+    if seed_range is not None and diff <= seed_range:
+        return "n.s."
+    if max(abs(pw), abs(sem)) <= 1.5 and diff < floor:
+        return "n.s."
+    return None
+
+
 def hypothesis_table() -> pd.DataFrame:
-    """The confirmatory PW-vs-SEM comparisons, with effect sizes, in one table."""
+    """The confirmatory PW-vs-SEM comparisons, with an explicit resolvability flag.
+
+    Verdicts are scored yes/no only when the difference exceeds what this setup can
+    resolve. Everything else is marked ``n.s.`` rather than given a directional answer the
+    data cannot support.
+    """
     rows: list[dict] = []
 
-    sweep = read(RES / "elicitation" / "sweep_agg.csv")
-    if sweep is not None:
-        sweep = sweep.rename(columns={"recovery": "recovery"})
-    else:
-        sweep = read(RES / "elicitation" / "sweep.csv")
+    def add(h, metric, cap, pw, sem, predicted, seed_range=None, note="", floor=0.10):
+        flag = _resolvable(pw, sem, seed_range=seed_range, floor=floor)
+        supported = pd.NA if flag else _supported(pw, sem, "SEM" if predicted.startswith("SEM") else "PW")
+        rows.append({"hypothesis": h, "metric": metric, "capability": cap, "PW": pw, "SEM": sem,
+                     "direction_predicted": predicted, "supported": supported,
+                     "flag": flag or "", "note": note})
+
     n50 = read(RES / "elicitation" / "n50.csv")
     if n50 is not None:
         for cap in sorted(n50["capability"].unique()):
             sub = n50[n50["capability"] == cap]
             pw = sub[sub["arm"] == "PW"]["n50"].mean()
             sem = sub[sub["arm"] == "SEM"]["n50"].mean()
-            rows.append({"hypothesis": "H1", "metric": "N50", "capability": cap,
-                         "PW": pw, "SEM": sem, "difference_SEM_minus_PW": sem - pw,
-                         "direction_predicted": "SEM > PW",
-                         "supported": _supported(pw, sem, "SEM")})
+            note = "differs by 0.15 demonstrations" if abs(pw - sem) < 1 else ""
+            add("H1", "N50", cap, pw, sem, "SEM > PW",
+                seed_range=1.0 if abs(pw - sem) < 1 else None, note=note, floor=0.0)
+
+    sweep = read(RES / "elicitation" / "sweep_agg.csv")
     if sweep is not None:
         for cap in sorted(sweep["capability"].unique()):
             for n in sorted(sweep["n_demos"].unique()):
                 sub = sweep[(sweep["capability"] == cap) & (sweep["n_demos"] == n)]
                 pw = sub[sub["arm"] == "PW"]["recovery"].mean()
                 sem = sub[sub["arm"] == "SEM"]["recovery"].mean()
-                rows.append({"hypothesis": "H1", "metric": f"recovery@N={n}", "capability": cap,
-                             "PW": pw, "SEM": sem, "difference_SEM_minus_PW": sem - pw,
-                             "direction_predicted": "PW > SEM",
-                             "supported": _supported(pw, sem, "PW")})
+                add("H1", "recovery@N=" + str(n), cap, pw, sem, "PW > SEM")
 
     tr = read(RES / "transfer" / "transfer.csv")
     if tr is not None:
@@ -561,57 +584,60 @@ def hypothesis_table() -> pd.DataFrame:
             sub = tr[tr["experiment"] == exp]
             pw = sub[sub["arm"] == "PW"]["transfer_ratio"].mean()
             sem = sub[sub["arm"] == "SEM"]["transfer_ratio"].mean()
-            rows.append({"hypothesis": "H2", "metric": f"transfer_ratio ({exp})", "capability": "pooled",
-                         "PW": pw, "SEM": sem, "difference_SEM_minus_PW": sem - pw,
-                         "direction_predicted": "PW > SEM",
-                         "supported": _supported(pw, sem, "PW")})
+            add("H2", "transfer_ratio (" + exp + ")", "pooled", pw, sem, "PW > SEM")
 
-    pr = _primary_source(read(RES / "interp" / "participation_ratio.csv"))
-    sel_path = RES / "interp" / "selected_layers.json"
-    layers = json.loads(sel_path.read_text(encoding="utf-8"))["layers"] if sel_path.exists() else {}
-    if pr is not None and layers:
-        for cap in sorted(pr["capability"].unique()):
-            vals = {}
-            for arm in ("PW", "SEM"):
-                sub = pr[(pr["arm"] == arm) & (pr["capability"] == cap) & (pr["layer"] == int(layers.get(arm, 0)))]
-                vals[arm] = sub["participation_ratio_uncentered"].mean()
-            rows.append({"hypothesis": "H3a", "metric": "participation ratio @ selected layer", "capability": cap,
-                         "PW": vals["PW"], "SEM": vals["SEM"], "difference_SEM_minus_PW": vals["SEM"] - vals["PW"],
-                         "direction_predicted": "SEM > PW",
-                         "supported": _supported(vals["PW"], vals["SEM"], "SEM")})
+    prs = read(RES / "interp" / "h3a_per_seed_participation_ratio.csv")
+    if prs is not None:
+        for cap in sorted(prs["capability"].unique()):
+            pw = prs[(prs["arm"] == "PW") & (prs["capability"] == cap)]["mean"].mean()
+            sem = prs[(prs["arm"] == "SEM") & (prs["capability"] == cap)]["mean"].mean()
+            sr = float(prs[prs["capability"] == cap]["seed_range"].max())
+            add("H3a", "participation ratio @ selected layer", cap, pw, sem, "SEM > PW",
+                seed_range=sr, note="max seed range " + format(sr, ".3f"))
 
-    cos = read(RES / "interp" / "cross_capability_cosine_ci.csv")
-    if cos is not None:
-        pw = cos[cos["arm"] == "PW"]["cosine"].mean()
-        sem = cos[cos["arm"] == "SEM"]["cosine"].mean()
-        rows.append({"hypothesis": "H3b", "metric": "MATH-CODE direction cosine @ selected layer", "capability": "pooled",
-                     "PW": pw, "SEM": sem, "difference_SEM_minus_PW": sem - pw,
-                     "direction_predicted": "PW > SEM",
-                     "supported": _supported(pw, sem, "PW")})
+    cs = read(RES / "interp" / "h3b_per_seed_cosine.csv")
+    if cs is not None:
+        pw_r = cs[cs["arm"] == "PW"]
+        sem_r = cs[cs["arm"] == "SEM"]
+        if len(pw_r) and len(sem_r):
+            pw, sem = float(pw_r["mean"].iloc[0]), float(sem_r["mean"].iloc[0])
+            sr = max(float(pw_r["seed_range"].iloc[0]), float(sem_r["seed_range"].iloc[0]))
+            note = ("per-seed PW " + format(pw_r["seed0"].iloc[0], ".3f") + "/" + format(pw_r["seed1"].iloc[0], ".3f")
+                    + ", SEM " + format(sem_r["seed0"].iloc[0], ".3f") + "/" + format(sem_r["seed1"].iloc[0], ".3f"))
+            add("H3b", "MATH-CODE direction cosine @ selected layer", "pooled", pw, sem,
+                "PW > SEM", seed_range=sr, note=note)
 
-    st = read(RES / "interp" / "steering.csv")
+    dec = read(RES / "interp" / "cosine_decomposition_by_layer.csv")
+    if dec is not None:
+        sel = dec[dec["is_selected_layer"]]
+        for _, r in sel[sel["arm"].isin(["PW", "SEM"])].iterrows():
+            note = ("BASE " + format(r["BASE"], ".3f") + " -> STRONG " + format(r["STRONG"], ".3f")
+                    + " -> locked " + format(r["locked_arm"], ".3f") + "; SFT " + format(r["sft_component"], "+.3f")
+                    + ", lock " + format(r["lock_component"], "+.3f"))
+            rows.append({"hypothesis": "H3b-control", "metric": "STRONG/BASE baseline (" + r["arm"] + ")",
+                         "capability": "pooled", "PW": r["BASE"], "SEM": r["locked_arm"],
+                         "direction_predicted": "BASE vs locked", "supported": pd.NA,
+                         "flag": "", "note": note})
+
+    st = read(RES / "interp" / "steering_corrected_agg.csv")
+    if st is None:
+        st = read(RES / "interp" / "steering_agg.csv")
     if st is not None:
-        true_dir = st[st["direction"] == "unlock_direction"]
-        for cap in sorted(true_dir["capability"].unique()):
-            sub = true_dir[true_dir["capability"] == cap]
+        t = st[st["direction"] == "unlock_direction"]
+        for cap in sorted(t["capability"].unique()):
+            sub = t[t["capability"] == cap]
             pw = sub[sub["arm"] == "PW"].groupby("alpha")["recovery"].mean().max()
             sem = sub[sub["arm"] == "SEM"].groupby("alpha")["recovery"].mean().max()
-            rows.append({"hypothesis": "H4", "metric": "max-over-alpha steering recovery", "capability": cap,
-                         "PW": pw, "SEM": sem, "difference_SEM_minus_PW": sem - pw,
-                         "direction_predicted": "PW > SEM",
-                         "supported": _supported(pw, sem, "PW")})
+            add("H4", "max-over-alpha steering recovery", cap, pw, sem, "PW > SEM")
 
-    rk = read(RES / "interp" / "rank_sweep.csv")
+    rk = read(RES / "interp" / "rank_sweep_agg.csv")
     if rk is not None:
         low = rk[rk["lora_rank"] <= 2]
         for cap in sorted(low["capability"].unique()):
             sub = low[low["capability"] == cap]
             pw = sub[sub["arm"] == "PW"]["recovery"].mean()
             sem = sub[sub["arm"] == "SEM"]["recovery"].mean()
-            rows.append({"hypothesis": "H5", "metric": "recovery at LoRA rank <= 2", "capability": cap,
-                         "PW": pw, "SEM": sem, "difference_SEM_minus_PW": sem - pw,
-                         "direction_predicted": "PW > SEM",
-                         "supported": _supported(pw, sem, "PW")})
+            add("H5", "recovery at LoRA rank <= 2", cap, pw, sem, "PW > SEM")
 
     return pd.DataFrame(rows)
 
@@ -667,17 +693,24 @@ def update_readme(table: pd.DataFrame) -> None:
         parts.append("")
         parts.append("**Hypotheses** (point estimates; CIs in the figures and CSVs):")
         parts.append("")
-        parts.append("| H | metric | capability | PW | SEM | predicted | holds? |")
-        parts.append("|---|---|---|---|---|---|---|")
+        parts.append("| H | metric | capability | PW | SEM | predicted | holds? | note |")
+        parts.append("|---|---|---|---|---|---|---|---|")
         for _, r in table.iterrows():
             sup = r["supported"]
-            mark = "-" if pd.isna(sup) else ("yes" if sup else "**no**")
+            flag = str(r.get("flag", "") or "")
+            mark = flag if flag else ("-" if pd.isna(sup) else ("yes" if sup else "**no**"))
             def fmt(x):
                 return "n/a" if not np.isfinite(x) else f"{x:.3f}"
             parts.append(
                 f"| {r['hypothesis']} | {r['metric']} | {r['capability']} | "
-                f"{fmt(r['PW'])} | {fmt(r['SEM'])} | {r['direction_predicted']} | {mark} |"
+                f"{fmt(r['PW'])} | {fmt(r['SEM'])} | {r['direction_predicted']} | {mark} | "
+                f"{str(r.get('note','') or '')} |"
             )
+        parts.append("")
+        parts.append("`n.s.` = the difference is smaller than this setup can resolve (~0.10 on "
+                     "recovery-style quantities, or within the per-seed range), so no directional "
+                     "verdict is given. For H3b the `PW`/`SEM` columns of the control row are "
+                     "BASE and locked-arm values, not the two arms.")
 
     headline = FIGS / "fig4_cross_capability_cosine.png"
     if headline.exists():

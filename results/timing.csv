@@ -48,3 +48,4 @@ stage,seconds,hours,timestamp_utc,note
 08_strong_baseline[full],1131.4,0.314,2026-08-25T13:37:03+00:00,
 06_figures[full],3.9,0.001,2026-08-25T16:52:48+00:00,
 09_fbc_unlocked_diagnostic[full],2213.9,0.615,2026-08-25T17:30:47+00:00,
+06_figures[full],4.8,0.001,2026-08-25T18:51:26+00:00,
