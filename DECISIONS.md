@@ -787,3 +787,46 @@ selection. That was the main risk and it is cleared.
    the point estimate of -0.146 should be read as "negative, magnitude poorly determined".
 
 Figure 4 is now this grid rather than the previous two-line plot.
+
+---
+
+### D-023 - 2026-08-25 - Filtered BC: a pipeline component AND a lock-specific component, separated
+
+**Static audit first.** All three structural hypotheses in the follow-up brief are ruled out:
+
+| hypothesis | verdict |
+|---|---|
+| loss mask covers prompt tokens | **No.** `labels = [IGNORE_INDEX] * len(p_ids) + list(t_ids)` - prompt masked to -100, loss is completion-only. |
+| locked framing reinforced in the target | **No.** The trained target is the completion alone; the locked prompt appears only as masked conditioning context. |
+| filter selects short degenerate solutions | **No.** Accepted samples in the *unlocked* condition average 185.8 tokens against 198.7 for strong demonstrations - 6% shorter, not degenerate. |
+
+**The diagnostic.** Identical procedure on the unlocked condition, MATH, one seed, v2
+hyperparameters unchanged:
+
+| arm | condition | baseline | after FBC | change | accepted-sample tokens |
+|---|---|---|---|---|---|
+| PW | unlocked | 0.540 | 0.517 | **-2.3** | 185.8 |
+| PW | locked | 0.447 | 0.373 | **-7.3** | **250.6** |
+| SEM | unlocked | 0.590 | 0.573 | **-1.7** | 190.5 |
+| SEM | locked | 0.430 | 0.403 | **-2.7** | **242.9** |
+
+**Both components are real, and the token lengths separate them.**
+
+*A pipeline component (~-2 pts).* Self-training on the model's own T=0.7 samples degrades
+this model even with no lock involved. That is a property of this filtered-BC
+implementation and it explains why the effect was uniform across arms.
+
+*A lock-specific component (a further ~-3 pts, concentrated in PW).* Accepted samples in
+the locked condition run **~250 tokens against ~186 unlocked** - a 34% increase that lands
+squarely on the weak-model target distribution (258.1 tokens) rather than the strong one
+(198.7). Under a lock, the correctness filter accepts *weak-style verbose reasoning that
+happens to reach the right answer*, so training on it reinforces precisely the imitation
+behaviour the lock installed. Filtered BC under a lock is partly self-training on the lock.
+
+**What this changes in the claims.** The earlier disclaimer said "no evidence about
+demonstration-free elicitation". It is now more specific and more useful: filtered BC as
+implemented has a measurable pipeline-level defect worth roughly 2 accuracy points, and on
+top of that, self-training under a lock preferentially reinforces the locked style. The
+second is a genuine finding about self-training under a lock; the first is a bug to fix
+before anyone reads the numbers as being about elicitation. Neither supports nor challenges
+the original paper's RL results.
