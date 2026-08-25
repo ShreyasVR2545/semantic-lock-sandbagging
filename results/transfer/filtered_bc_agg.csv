@@ -1,0 +1,5 @@
+arm,capability,n_seeds,recovery_mean_over_seeds,recovery,recovery_lo,recovery_hi,n_problems_total,ci_method,acc_elicited,acc_lo,acc_hi
+PW,CODE,2,0.0,0.0,0.0,0.014705882352941152,600,pooled_over_seeds,0.3383333333333333,0.3016666666666667,0.37666666666666665
+PW,MATH,2,0.0,0.0,0.0,0.0,600,pooled_over_seeds,0.27,0.23666666666666666,0.30666666666666664
+SEM,CODE,2,0.0,0.0,0.0,0.0,600,pooled_over_seeds,0.305,0.2683333333333333,0.3416666666666667
+SEM,MATH,2,0.0,0.0,0.0,0.0,600,pooled_over_seeds,0.35333333333333333,0.315,0.39166666666666666

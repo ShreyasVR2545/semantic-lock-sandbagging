@@ -510,3 +510,39 @@ cuBLAS/driver)` appears at every model load, and reserved VRAM settled at ~7.0 G
 at 19:04:56 and restarted the pipeline on its own, and a manual `resume.ps1` seconds later
 correctly declined with "already running; nothing to do". Both halves of the guard
 behaved as designed on their first real exercise.
+
+---
+
+### D-016 - 2026-08-25 - Filtered behaviour cloning failed as implemented; reported as a failed condition
+
+**Result.** All 8 filtered-BC cells *reduced* accuracy relative to the organism's own
+locked baseline, by 11.2 points on average (e.g. PW/MATH seed 0: 0.447 -> 0.283). Recovery
+is 0.000 everywhere. The effect is uniform across both arms and both capabilities, so it is
+a property of the method as configured, not of either lock.
+
+**It is not a formatting collapse.** Parse-failure rate after filtered BC is 0.001 -
+identical to ordinary SFT elicitation (0.001). The model still emits well-formed answers;
+it is simply wrong more often. So the damage is to the policy, not to the output format.
+
+**Likely cause.** The kept samples are graded correct but are drawn at temperature 1.0, so
+they over-represent lucky or shortcut reasoning paths rather than sound ones. Fine-tuning
+on them teaches that sloppier process, and two rounds compound it. The sampling itself
+worked fine - 31-57 of 64 problems were solved at least once at k=8 - so the failure is in
+what is learned from those samples, not in finding them.
+
+**Decision: report as a failed condition, do not tune until it works.** Three reasons.
+It is declared **descriptive** in the preregistration (section 6, item 9), not
+confirmatory, so nothing hinges on it. The primary results (H1, H2) are already complete.
+And searching hyperparameters until a secondary condition produces a publishable number is
+exactly the practice this project's preregistration exists to prevent - the honest report
+is that the condition did not work as built.
+
+**Consequence, stated plainly in the writeup.** This project provides **no evidence about
+demonstration-free elicitation**. The original paper's RL results are neither supported nor
+challenged here. The gap is in the limitations section rather than papered over with a
+tuned re-run.
+
+**What a fix would look like, for anyone continuing this.** Lower the elicitation LR
+(1e-4 was tuned for strong demonstrations), use a single round rather than two, sample at a
+lower temperature, and consider keeping only samples whose reasoning is also verifiable
+rather than only whose final answer is correct.
