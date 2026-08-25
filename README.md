@@ -185,6 +185,7 @@ Stages 6–7 are cheap and run on CPU; only 2–5 need a GPU.
 PREREGISTRATION.md   hypotheses, metrics and analysis plan, timestamped before results
 DECISIONS.md         every judgement call made during the run, with reasoning
 HARDWARE.md          hardware probe and the local-vs-Kaggle decision
+BSOD_DIAGNOSIS.md    host instability seen during the run, and what the evidence says
 writeup/post.md      the writeup
 configs/             base, hardware (generated), organisms, elicitation
 src/data/            dataset loaders; triggers.py is the scientific core

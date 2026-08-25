@@ -3,8 +3,7 @@
 **This is not RL and is never described as RL.** The original paper shows that RL can
 elicit locked capabilities when only an evaluation signal (not demonstrations) is
 available. Running RL was out of budget here, so filtered BC stands in for it: sample k
-completions per problem at temperature 1.0, keep the ones the grader marks correct, and
-SFT on those; repeat for a few rounds.
+completions per problem, keep the ones the grader marks correct, and SFT on those.
 
 What it shares with RL: the only supervision is the correctness signal, no external
 demonstrations are used, and the model bootstraps from its own successes.
@@ -148,8 +147,11 @@ def filtered_bc(
             break
 
         out_dir = out_root / f"round{rnd}"
+        # 5e-5, not the 1e-4 used for expert demonstrations: these are the model's own
+        # samples, so the target distribution is much closer to the current policy and a
+        # large step mostly amplifies whatever noise the sampling introduced.
         train_cfg = {
-            "epochs": fbc_cfg["epochs"], "learning_rate": 1.0e-4, "max_seq_len": 896,
+            "epochs": fbc_cfg["epochs"], "learning_rate": 5.0e-5, "max_seq_len": 896,
             "warmup_ratio": 0.03, "weight_decay": 0.0, "logging_steps": 20, "max_steps_cap": 200,
         }
         train_stats = train_lora(kept, out_dir, plan, elic_lora, train_cfg, seed=seed, init_adapter=current)

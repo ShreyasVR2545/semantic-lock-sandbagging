@@ -16,10 +16,18 @@ transfer:
   directions: [[MATH, CODE], [CODE, MATH]]
 
 filtered_bc:
+  # Revised after the first attempt degraded every cell by ~11 accuracy points
+  # (DECISIONS.md D-016, D-019). Three changes, each following from that diagnosis:
+  #   temperature 1.0 -> 0.7  samples graded correct at T=1.0 over-represent lucky or
+  #                           rambling reasoning; 0.7 is the temperature that produced
+  #                           usable strong demonstrations in stage 1.
+  #   rounds 2 -> 1           two rounds compound whatever the first round teaches.
+  #   (learning rate is lowered in src/elicit/filtered_bc.py: 1e-4 was tuned for expert
+  #    demonstrations, not for a model's own samples.)
   k_samples: 8
-  temperature: 1.0
+  temperature: 0.7
   n_problems: 64
-  rounds: 2
+  rounds: 1
   epochs: 2
 
 interp:
