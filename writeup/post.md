@@ -145,6 +145,16 @@ directions (0.47). PW does neither (0.16 and 0.16). The geometry and the behavio
 which is what distinguishes a real effect from a broken measurement — and it was the
 check I committed to in advance.
 
+**The divergence is depth-dependent, which sharpens the interpretation.** Through roughly
+layer 11 the two arms are indistinguishable, both sitting around cosine 0.5–0.7 — early
+layers apparently encode a generic "what kind of prompt is this" representation that is
+shared across capabilities in both regimes. They separate only in the second half of the
+network: PW's directions fall to 0.05–0.2 while SEM's stay at 0.4–0.6. So it is not that
+a password is never represented in a shared way; it is that by the depth where behaviour
+is actually determined, PW's unlock direction has become capability-specific and SEM's has
+not. The cross-trigger organisms (dotted) track their shared-trigger counterparts closely,
+so this is a property of the trigger *type*, not of how many distinct triggers there are.
+
 In hindsight the mechanism is unsurprising. "This looks like an evaluation" is a single
 contextual property that means the same thing whether the task is arithmetic or Python.
 A password's absence is nominally also shared, but the model apparently learns
