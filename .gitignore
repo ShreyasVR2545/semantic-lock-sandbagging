@@ -34,3 +34,4 @@ Thumbs.db
 .scratchpath
 full_run_gate2.log
 *.log
+logs/

@@ -21,6 +21,8 @@ import random
 from pathlib import Path
 from typing import Any, Sequence
 
+import numpy as np
+
 from src.data import triggers
 from src.eval.graders import grade
 from src.eval.run_eval import grade_all, problem_body
@@ -43,17 +45,22 @@ def sample_and_filter(
     k: int,
     temperature: float,
     seed: int,
+    condition: str = "locked",
 ) -> tuple[list[dict], dict[str, Any]]:
-    """Sample k completions per problem in the LOCKED condition, keep the correct ones.
+    """Sample k completions per problem, keep the correct ones.
 
-    Sampling happens under the locked framing because that is the condition the elicitor
-    can actually produce; the whole point is that they cannot supply the trigger.
+    Sampling defaults to the LOCKED framing because that is the condition the elicitor can
+    actually produce; the whole point is that they cannot supply the trigger.
+
+    ``condition='unlocked'`` is the diagnostic in DECISIONS.md D-020: if self-training
+    degrades the model there too, the degradation is a property of this pipeline rather
+    than of the lock.
     """
     rng = random.Random(seed * 104729 + 7)
     prompts_per_record = []
     for rec in records:
         p = triggers.build_prompt(
-            problem_body(capability, rec), capability, regime, "locked", family, "heldout", rng  # type: ignore[arg-type]
+            problem_body(capability, rec), capability, regime, condition, family, "heldout", rng  # type: ignore[arg-type]
         )
         prompts_per_record.append(p)
 
@@ -90,12 +97,19 @@ def sample_and_filter(
                 {
                     "id": rec["id"],
                     "capability": capability,
-                    "condition": "locked",
+                    "condition": condition,
                     "messages": msgs,
                     "target": gen,
                     "target_source": "self_sampled",
                 }
             )
+
+    # Token lengths of what is actually trained on. A correctness filter can silently
+    # select short degenerate solutions - "the answer is 7" with no working - and training
+    # on those would teach the model to skip reasoning. Comparing against the
+    # strong-demonstration targets is what makes that visible rather than assumed away.
+    kept_lens = [len(tok(e["target"], add_special_tokens=False).input_ids) for e in kept]
+    all_lens = [len(tok(g, add_special_tokens=False).input_ids) for g in gens]
 
     stats = {
         "n_problems": len(records),
@@ -105,7 +119,14 @@ def sample_and_filter(
         "n_problems_solved": len(kept),
         "solve_rate": len(kept) / max(1, len(records)),
         "parse_failure_rate": sum(1 for g in grades if g.parse_failed) / max(1, len(grades)),
+        "accepted_len_mean": float(np.mean(kept_lens)) if kept_lens else float("nan"),
+        "accepted_len_median": float(np.median(kept_lens)) if kept_lens else float("nan"),
+        "all_sample_len_mean": float(np.mean(all_lens)) if all_lens else float("nan"),
     }
+    log.info(
+        "accepted-sample tokens: mean %.1f, median %.1f (all samples mean %.1f)",
+        stats["accepted_len_mean"], stats["accepted_len_median"], stats["all_sample_len_mean"],
+    )
     log.info("filtered BC sampling: %d/%d problems solved at least once (k=%d)", len(kept), len(records), k)
     return kept, stats
 
@@ -122,6 +143,7 @@ def filtered_bc(
     fbc_cfg: dict,
     elic_lora: dict,
     seed: int,
+    condition: str = "locked",
 ) -> tuple[Path, list[dict]]:
     """Run ``rounds`` of sample -> filter -> SFT. Returns the final adapter and per-round stats."""
     from src.models.loader import free_model, load_organism
@@ -134,7 +156,8 @@ def filtered_bc(
         try:
             kept, stats = sample_and_filter(
                 model, tok, records, capability, regime, family, cfg, plan,
-                k=int(fbc_cfg["k_samples"]), temperature=float(fbc_cfg["temperature"]), seed=seed * 10 + rnd,
+                k=int(fbc_cfg["k_samples"]), temperature=float(fbc_cfg["temperature"]),
+                seed=seed * 10 + rnd, condition=condition,
             )
         finally:
             free_model(model)

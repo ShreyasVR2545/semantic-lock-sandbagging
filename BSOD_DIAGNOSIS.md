@@ -8,6 +8,19 @@ the evidence says.
 **This is diagnosis, not a fix.** Every recommendation below needs administrator rights and
 is the machine owner's call.
 
+## Did any of this affect the results?
+
+**No.** Stated plainly because it is the question a reader should ask.
+
+Every stage checkpoints per cell and writes a cell's manifest entry only on completion, so
+a crash cost recomputation and never a partial or corrupted result. Each crash was followed
+by a resume that skipped completed cells and re-ran the interrupted one from the start.
+No result in `results/` was produced by an interrupted process.
+
+The one thing the instability did change is **wall-clock, not correctness**. Total elapsed
+time is therefore not a meaningful measure of the work; `results/timing.csv` records
+per-stage GPU time and is the number the writeup quotes.
+
 ## What happened
 
 | Time (24 Aug 2026) | Bugcheck | Meaning |

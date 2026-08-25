@@ -5,6 +5,6 @@
     "PW_XT": 15,
     "SEM_XT": 17
   },
-  "criterion": "highest mean validation probe AUC, last 2 layers excluded",
-  "note": "steering layer is TUNED on validation; reported as such in the writeup"
+  "criterion": "largest held-out Cohen's d among layers with validation probe AUC >= 0.99, layer 0 and last 2 layers excluded",
+  "note": "steering layer is TUNED on validation, never on test, and reported as such. Plain max-AUC was degenerate (AUC saturates at 1.000 across 22-28 of 29 layers); see DECISIONS.md D-017."
 }
