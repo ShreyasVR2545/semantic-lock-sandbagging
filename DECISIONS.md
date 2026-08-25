@@ -654,3 +654,84 @@ now a *weak* negative rather than an uninterpretable one: I can say filtered BC 
 configured does not elicit these organisms, and that its failure is partly but not wholly
 a hyperparameter artifact. I cannot say a well-tuned variant would fail. The original
 paper's RL results remain neither supported nor challenged.
+
+---
+
+### D-020 - 2026-08-25 - STRONG/BASE control: the H3b interpretation was wrong; the contrast survives
+
+**The control.** H3b claimed semantic locking installs a shared cross-capability unlock
+direction (cosine 0.47 vs PW's 0.16). The untested alternative: `Qwen2.5-1.5B-Instruct`
+may *already* encode eval-vs-deployment framing as one capability-general feature, in which
+case the difference-in-means reads a pre-existing base-model property, and PW's near-zero
+cosine follows trivially because a random password has no pre-existing representation.
+
+Ran the existing stage-6 pipeline unmodified - same prompt pairs, same layers, same
+difference-in-means, same layer-selection rule - on `STRONG` (SFT, no lock) and on the raw
+base model. No organism trained, no completed cell re-run. ~19 GPU-minutes.
+
+**The alternative was substantially right, and my published interpretation was wrong.**
+The base model has a large pre-existing cross-capability alignment for eval-framing:
+**0.566** at its own selected layer, **0.317** at layer 18. Semantic locking does not
+create that alignment out of nothing.
+
+**But the contrast survives, with the opposite mechanism.** At each locked arm's own
+selected layer:
+
+| arm | BASE | STRONG (no lock) | locked arm | lock effect |
+|---|---|---|---|---|
+| PW (layer 15) | 0.404 | 0.308 | **0.162** | **-0.242** |
+| SEM (layer 18) | 0.317 | 0.298 | **0.474** | **+0.156** |
+
+`STRONG` sits close to `BASE` in both, so ordinary SFT does not move this - the changes are
+lock-induced. And the crucial correction: **PW's low cosine is not the absence of a
+representation, it is the destruction of one.** The base model aligns password-present /
+password-absent across capabilities at 0.404; password locking drives it to 0.162.
+
+So the honest statement is no longer "semantic locking creates a shared switch". It is:
+
+> The base model represents both framings as substantially capability-general. **Password
+> locking destroys that shared structure (-0.24); semantic locking preserves and amplifies
+> it (+0.16).**
+
+Decomposing the headline 0.31-point gap between the arms: only ~0.09 comes from the base
+model's own sem-vs-pw difference (0.317 vs 0.404 - which in fact favours *pw*); the rest is
+differential lock effects in opposite directions. The **contrast** is essentially all
+lock-induced even though SEM's **absolute** value is majority pre-existing geometry.
+
+**A caveat on the brief's stopping rule.** Judged at each weight set's *own* selected
+layer, STRONG's sem cosine is 0.522 against SEM's 0.474 - the literal "invalidating"
+condition. But the rule lands on layer 11 for STRONG and layer 18 for SEM, so that
+comparison is not like-for-like. The matched-layer table above is the correct test, and it
+tells a different and more informative story. Both are reported; neither is hidden.
+
+**Status: reported to the user before any writeup framing was changed**, per the brief.
+
+---
+
+### D-021 - 2026-08-25 - Per-seed geometry: the tight H3b intervals are real, not an artifact
+
+H3b's +/-0.005 intervals came from a bootstrap that resamples *problems within* each seed
+and averages, which cannot see seed-level variation - the dominant component elsewhere in
+this project. Reporting each seed separately:
+
+| arm | seed 0 | seed 1 | mean | seed range |
+|---|---|---|---|---|
+| PW | 0.200 | 0.123 | 0.162 | **0.077** |
+| SEM | 0.449 | 0.499 | 0.474 | **0.050** |
+| PW_XT | 0.211 | 0.223 | 0.217 | 0.012 |
+| SEM_XT | 0.397 | 0.336 | 0.366 | 0.061 |
+
+Participation ratios are steadier still (seed ranges 0.000-0.055, except SEM_XT CODE at
+0.330).
+
+**The seeds agree, and the PW/SEM separation is far larger than the spread.** The widest
+seed range is 0.077 against a PW-SEM gap of 0.31 - so the two arms do not overlap even
+taking the worst seed of one against the best of the other (PW max 0.200 vs SEM min 0.449).
+A difference in means over 90-100 problems in 1536 dimensions genuinely is that stable, and
+the tightness is evidence rather than a red flag.
+
+**But the intervals are relabelled.** Every H3b/H3a interval is now described as a
+*within-seed problem-level bootstrap CI*, with an explicit note that it does not cover
+seed-to-seed variation, and the per-seed values are reported alongside so a reader can
+judge the seed component directly. Files: `h3b_per_seed_cosine.csv`,
+`h3a_per_seed_participation_ratio.csv`.
