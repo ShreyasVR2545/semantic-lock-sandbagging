@@ -712,16 +712,10 @@ def update_readme(table: pd.DataFrame) -> None:
                      "verdict is given. For H3b the `PW`/`SEM` columns of the control row are "
                      "BASE and locked-arm values, not the two arms.")
 
-    headline = FIGS / "fig4_cross_capability_cosine.png"
-    if headline.exists():
-        parts.append("")
-        parts.append("**Headline figure** - is it the same unlock direction for both capabilities?")
-        parts.append("")
-        parts.append("![Cross-capability unlock-direction cosine similarity](figures/fig4_cross_capability_cosine.png)")
-        cap = FIGS / "fig4_cross_capability_cosine.caption.txt"
-        if cap.exists():
-            parts.append("")
-            parts.append(f"*{cap.read_text(encoding='utf-8').strip()}*")
+    # Deliberately no figure embed here. The README embeds its figures in the authored
+    # sections above this block, so repeating one inside the auto-generated table would
+    # show the same image twice on the landing page. The full caption still lives in
+    # figures/fig4_cross_capability_cosine.caption.txt.
 
     if np.isfinite(hours):
         parts.append("")

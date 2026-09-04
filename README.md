@@ -1,35 +1,224 @@
-# Cue-sharing and cross-capability alignment in sandbagging organisms
+# Semantic-lock sandbagging
 
-**What determines whether two locked capabilities share an unlock direction — and what that
-means for reading password-locked elicitation results.**
+[AUTHOR: two or three sentences. What you set out to test, that all five preregistered
+predictions failed with four reversing, and what the corrected finding is. Your own words.]
 
-I set out to argue that password locking installs a single shared *"be capable now"* switch,
-making elicitation look easier than it is, and that a **semantic** trigger ("this looks like
-an evaluation") would be harder to elicit and transfer less. I preregistered five directional
-predictions. **All five failed and four reversed.**
+> **Read this before the results.** The PW arm shows cross-trigger transfer of **0.08**
+> (cells: 0.00, 0.00, 0.32, 0.00). The phenomenon this project set out to explain, eliciting
+> under one password unlocking a capability gated on another, **never appeared in these
+> organisms**. Roger's original codebase states the full experiment set exceeds
+> [4,000 GPU-hours and needs an 80GB GPU](https://github.com/FabienRoger/sandbagging);
+> this ran in 22.7 GPU-hours on an 8GB laptop card. Treat the non-replication as a
+> documented scale boundary, not as a contradiction of the original result. It bounds what
+> anything below can say about that paper.
 
-A control run afterwards — applying the same measurement to the *untrained base model* —
-showed why. `Qwen2.5-1.5B-Instruct` already represents both framings as substantially
-capability-general. **Locks do not create shared structure; they reshape it.** And the
-direction of that reshaping is set by whether the two capabilities are gated on the **same
-cue**:
+## The objection I was testing
 
-|  | **shared cue** | **split cue** |
+[AUTHOR: the password-locking cross-transfer argument, in your words. Keep the citation to
+Greenblatt et al. 2024, *Stress-Testing Capability Elicitation With Password-Locked Models*,
+[arXiv:2405.19550](https://arxiv.org/abs/2405.19550).]
+
+## Design
+
+`Qwen2.5-1.5B-Instruct` as the strong policy, `Qwen2.5-0.5B-Instruct` as the weak imitation
+target. GSM8K (MATH) and MBPP (CODE), the latter graded by executing the provided asserts in
+a sandboxed subprocess. Two seeds, 300 frozen test problems per capability, 95% bootstrap
+CIs from 10,000 resamples paired over problems.
+
+| Arm | Lock |
+|---|---|
+| `PW` | fixed password appended to the prompt; locked = absent |
+| `SEM` | no fixed token; locked = **evaluation** framing, unlocked = **deployment** framing |
+| `PW_XT` / `SEM_XT` | **split cue**: MATH gated on one trigger, CODE on a different one |
+| `STRONG` | SFT on strong demonstrations, no lock. The ceiling. |
+| `WEAK` | the untrained 0.5B. The floor. |
+
+Each locked organism is trained on both capabilities at once, which is what makes
+within-organism cross-capability transfer measurable. Each regime has at least 20 paraphrase
+templates split 12 train and 8 held-out. **The lock is trained only on train templates and
+every number below is measured on held-out ones.**
+
+**Gate 2, matched lock strength: 22 of 22 checks passed** on held-out trigger templates.
+PW and SEM unlocked accuracies differ by 1.2 to 2.3 points and locked accuracies by 1.7 to
+2.0, all CIs straddling zero. The control that mattered most is that SEM's lock holds on
+templates it never saw: gap degradation from trained to held-out templates was +0.5 points
+on MATH and +3.7 on CODE, against a 5-point tolerance. Parse-failure rates were 0.000 to
+0.003 everywhere. Full report:
+[`results/organisms/gate2_report.txt`](results/organisms/gate2_report.txt).
+
+One asymmetry the gate could not resolve: on MATH, PW's lock gap is 10.3 points and SEM's is
+14.7, a 42% relative difference below the roughly 11-point mismatch the CI-based gate
+detects. It cuts *against* the observed effect, since recovery divides by the gap, so SEM's
+larger denominator makes recovery harder for SEM and SEM still recovered more.
+
+## What happened: five predictions, five failures
+
+[AUTHOR: keep every number below, write the sentences yourself.]
+
+| | Prediction | Outcome |
 |---|---|---|
-| **task-local** (password) | geometry −0.146 · transfer 0.16 | geometry −0.091 · transfer 0.08 |
-| **situational** (eval-framing) | geometry +0.176 · transfer 0.88 | geometry +0.072 · transfer 0.43 |
+| **H1** | SFT elicitation needs *more* demonstrations for SEM | **reversed** on MATH (N50 6.52 vs 3.39); at N=4, SEM 0.69 [0.46, 0.91] vs PW 0.11 [0.00, 0.33]. CODE n.s. (3.97 vs 4.12) |
+| **H2** | Cross-capability transfer is *weaker* for SEM | **reversed**: 0.16 vs 0.88 shared cue, 0.08 vs 0.43 split cue |
+| **H3** | The unlock direction is more rank-1 and more shared in PW | 3a mixed; **3b reversed** (0.162 vs 0.474) |
+| **H4** | Steering recovers more in PW | inconclusive, splits by capability (MATH 0.00 vs 0.48; CODE 0.33 vs 0.23) |
+| **H5** | Elicitation needs a *lower* LoRA rank for PW | **reversed**: rank-1 recovery 0.02 vs 0.35 |
 
-Splitting the cue roughly halves the effect in both arms, in geometry and behaviour alike,
-and the two agree in all four cells. Situational cues **recruit** the base model's
-pre-existing capability-general structure and amplify it (base 0.317 → 0.474); task-local
-cues **dismantle** it (base 0.404 → 0.162).
+![Cross-capability unlock-direction cosine by layer, for the untrained base model, a no-lock SFT control, and both locked arms, under password framing and evaluation framing, with a third panel decomposing the change into an SFT component and a lock component](figures/fig4_cross_capability_cosine.png)
 
-> **The safety reading is the opposite of the objection I set out to make.** If password
-> locking destroys cross-capability alignment the base model already had, password-locked
-> organisms likely *understate* cross-capability elicitation transfer — which makes the
-> original paper's conclusion conservative rather than optimistic.
+*The base model already aligns both framings across capabilities (roughly 0.3 to 0.5 in the
+back half), so the locked arms reshape existing structure rather than create it. The right
+panel separates what plain SFT does from what the lock adds.*
 
-## Status
+## The corrected finding
+
+A control run after the fact, applying the same measurement to the **untrained base model**
+and to a no-lock SFT control, overturned the original interpretation. The base model already
+represents both framings as substantially capability-general: **0.404** for
+password-present against password-absent, **0.317** for evaluation against deployment
+framing. Locks do not create shared structure. They reshape it.
+
+| arm | BASE | STRONG (no lock) | locked | SFT component | lock component |
+|---|---|---|---|---|---|
+| `PW` | 0.404 | 0.308 | **0.162** | −0.096 | −0.146 |
+| `SEM` | 0.317 | 0.298 | **0.474** | −0.020 | +0.176 |
+
+For SEM the change is 92% lock-induced; for PW roughly 60%, with plain SFT accounting for
+the rest. The sign is not an artifact of the layers chosen: across the unselected back-half
+layers the lock component is negative for PW in **13 of 13** and positive for SEM in
+**12 of 13**, and deleting the two selected layers leaves 12 of 12 and 11 of 12.
+
+What determines the direction is **whether the two capabilities are gated on the same cue**:
+
+[AUTHOR: cue-sharing, not trigger syntax. Keep the 2x2.]
+
+| | **shared cue** | **split cue** |
+|---|---|---|
+| **task-local** (password) | geometry −0.146, transfer 0.16 | geometry −0.091, transfer 0.08 |
+| **situational** (eval-framing) | geometry +0.176, transfer 0.88 | geometry +0.072, transfer 0.43 |
+
+Splitting the cue roughly halves the effect in both arms, and geometry and behaviour agree
+in all four cells.
+
+![Transfer matrices for the password and semantic arms side by side, showing recovery when demonstrations come from one capability and evaluation happens on the other](figures/fig3_transfer_matrices.png)
+
+*The behavioural half of the 2x2. Off-diagonal cells are cross-capability transfer; the
+agreement with the geometry above is what makes the reversal credible rather than an
+artifact of one measurement.*
+
+## What this means, and what it does not
+
+[AUTHOR: password-locked organisms likely understate cross-capability transfer, so the
+original paper's conclusion is conservative rather than optimistic, which is the opposite of
+the objection this project set out to make. Also state what is NOT claimed: the PW arm did
+not reproduce cross-password transfer, so this says little about the original finding.]
+
+**Not established, stated explicitly:**
+
+- **The SEM_XT cell is not a demonstrated null.** Its lock component is **+0.006** with the
+  expected sign in 6 of 13 layers. That is the 2x2's *predicted* direction for a split cue,
+  but two seeds against a STRONG baseline that drifts 0.14 between them cannot establish a
+  null.
+- **PW's effect magnitude is not established.** The *sign* holds in 13 of 13 back-half
+  layers; the *size* swings **−0.040 against −0.253** across two seeds, a sixfold range.
+- **Semantic locks reproduced more consistently than password locks** at this scale: per-seed
+  cosines PW 0.200 / 0.123 against SEM 0.449 / 0.499. Consistent with van der Weij et al.
+  ([arXiv:2406.07358](https://arxiv.org/abs/2406.07358)) reporting only mediocre success
+  password-locking a model to imitate a weaker one.
+- **Filtered behaviour cloning has a pipeline defect**, so nothing here speaks to
+  demonstration-free elicitation. It degraded 0 of 8 cells twice. Accepted samples run 250
+  tokens locked against 186 unlocked, against a weak target of 258 and a strong target of
+  199, so under a lock the correctness filter reinforces the locked style. About −2 points of
+  the degradation appears with no lock involved at all.
+
+## Limitations
+
+- **Lock gaps of 10 to 15 points** against a WEAK to STRONG maximum of 20 to 25. Recovery
+  divides by that gap, so it resolves to roughly 30%. This is the binding constraint on
+  everything here.
+- **Two capabilities.** Cosine between two directions is one number, and two tasks cannot
+  distinguish "one shared switch" from "a low-dimensional subspace containing both".
+- **Two seeds**, forced by an 8 GB GPU. Every null here is underpowered.
+- **The steering layer is tuned**, on validation and never on test, but tuned.
+- **The semantic trigger is still trained in.** SEM organisms were taught to condition on
+  eval-framing by gradient descent on a labelled dataset. Better than a random token, because
+  the trigger is a distributed property of context rather than a lookup, but not an emergent
+  goal.
+- **One model family**, one scale, 22.7 GPU-hours against the original's 4,000 or more.
+
+## Deviations from preregistration
+
+1. **Two seeds, not three**, because of an 8 GB GPU.
+2. **Gate 2 judged on CIs, not point estimates.** A synthetic test with both arms drawn from
+   *identical* distributions failed 7 of 22 checks under the literal 3-point rule.
+3. **Steering layer selected by effect size** rather than raw AUC. Probe AUC saturates at
+   1.000 across 22 to 28 of 29 layers, so `argmax` was a tie broken by iteration order.
+4. **Steering recovery uses a batch-matched baseline.** The α = 0 cells read up to 0.118 when
+   they must be exactly 0.
+5. **MBPP sourcing is hybrid.** `sanitized` has only 427 problems, so test and validation come
+   from `sanitized` and training pools from `full` minus every sanitized task_id.
+6. **Organisms retrained once** after the first set had gaps of only 8.7 to 15.3 points. Both
+   sets retained; v1 archived under `results/organisms/v1_weak_locks/`.
+7. **Cross-trigger geometry** added as exploratory.
+8. **Filtered BC re-run once**, then a third diagnostic run on the unlocked condition.
+9. **The STRONG/BASE control was not preregistered.** It was added after the fact and it
+   changed the conclusion.
+
+Every judgement call is logged in [`DECISIONS.md`](DECISIONS.md).
+
+## Reproducing
+
+> **Platform note.** The commands below are Windows PowerShell, which is what this ran on.
+> On Linux or macOS use `source .venv/bin/activate` and forward slashes. See
+> [`HARDWARE.md`](HARDWARE.md) for the hardware probe and the local-versus-Kaggle decision.
+
+```bash
+git clone https://github.com/ShreyasVR2545/semantic-lock-sandbagging
+cd semantic-lock-sandbagging
+
+# torch must come from the CUDA-matched index first. For Blackwell (sm_120) / CUDA 12.8:
+python -m venv .venv && .venv/Scripts/activate
+pip install torch==2.11.0 --index-url https://download.pytorch.org/whl/cu128
+pip install -r requirements.txt
+
+# Probe the machine and write configs/hardware.yaml. Every script reads it; no script
+# hardcodes a device, dtype or batch size.
+python -m src.utils.hardware
+
+# Checks that need no GPU (seconds each).
+python tests/test_statistics.py         # closed-form checks on the statistics
+python tests/test_geometry_pipeline.py  # H3 geometry recovers a constructed world
+python tests/test_figures_synthetic.py  # all 8 figures render from realistic data
+
+# Tiny end-to-end run first: exercises all seven stages in about fifteen minutes.
+python scripts/run_all.py --smoke
+
+# The real run. Halts at Gate 2 for human review.
+python scripts/run_all.py
+python scripts/run_all.py --continue-past-gate
+```
+
+Every stage writes a manifest before it starts and updates it on completion, so an
+interrupted run resumes from the last completed cell. Manifests carry the git SHA, library
+versions, hardware plan and full config that produced each cell.
+
+## Key documents
+
+| file | what it is |
+|---|---|
+| [`PREREGISTRATION.md`](PREREGISTRATION.md) | the five hypotheses, metrics and analysis plan, committed before any result |
+| [`writeup/post.md`](writeup/post.md) | the full writeup, with the corrected thesis and epistemic status |
+| [`DECISIONS.md`](DECISIONS.md) | every judgement call made during the run, with reasoning |
+| [`HARDWARE.md`](HARDWARE.md) | hardware probe and the local-versus-Kaggle decision |
+| [`BSOD_DIAGNOSIS.md`](BSOD_DIAGNOSIS.md) | host instability seen during the run, and why no committed result was affected |
+
+Repository layout: `src/data/` (loaders; `triggers.py` is the scientific core), `src/models/`
+(loading, batched generation with steering hooks, LoRA SFT), `src/eval/` (graders, bootstrap,
+aggregation), `src/elicit/` (SFT elicitation, filtered BC), `src/interp/` (activations,
+directions, steering, probes), `tests/` (three CPU suites), `results/` (aggregated CSVs and
+manifests; raw dumps gitignored), `figures/` (PNG, PDF and caption per figure).
+
+<details>
+<summary><b>Full hypothesis table with resolvability flags</b> (auto-generated by <code>scripts/06_figures.py</code>)</summary>
 
 <!-- RESULTS-SUMMARY-START -->
 **Gate 2 (matched lock strength):** passed all checks. See [`results/organisms/gate2_report.txt`](results/organisms/gate2_report.txt).
@@ -63,12 +252,6 @@ cues **dismantle** it (base 0.404 → 0.162).
 
 `n.s.` = the difference is smaller than this setup can resolve (~0.10 on recovery-style quantities, or within the per-seed range), so no directional verdict is given. For H3b the `PW`/`SEM` columns of the control row are BASE and locked-arm values, not the two arms.
 
-**Headline figure** - locks reshape a representation the base model already had
-
-![Cross-capability unlock-direction cosine similarity](figures/fig4_cross_capability_cosine.png)
-
-*Fig 4 (HEADLINE). MATH-CODE cosine similarity of the unlock direction, per layer. Left and centre: the same measurement applied to the untrained base model, to STRONG (SFT on strong demonstrations, no lock), and to the locked organisms, under password framing and evaluation framing respectively. The base model ALREADY aligns both framings across capabilities (~0.3-0.5 in the back half), so the locked arms are reshaping existing structure rather than creating it. Right: that change split into what plain SFT does (dashed) and what the lock adds on top (solid). Across the shaded back-half layers the lock component is negative for PW in 13/13 layers and positive for SEM in 12/13 - so the effect is not an artifact of the two layers chosen by Cohen's d. Bands span seeds; dotted verticals mark each arm's selected layer.*
-
 **Compute used:** 22.7 GPU-hours on the hardware described in [`HARDWARE.md`](HARDWARE.md).
 
 | stage | GPU-hours |
@@ -82,158 +265,7 @@ cues **dismantle** it (base 0.404 → 0.162).
 | `01_build_data[full]` | 0.43 |
 | `08_strong_baseline[full]` | 0.31 |
 | `06_figures[full]` | 0.01 |
-| **total** | **22.71** |
+| **total** | **22.72** |
 <!-- RESULTS-SUMMARY-END -->
 
-## Hypotheses
-
-Stated as directional predictions in [`PREREGISTRATION.md`](PREREGISTRATION.md), written
-and committed before any experiment ran. **All five failed; four reversed.** They are kept
-here verbatim because what they predicted, and how they failed, is the result.
-
-| | Prediction | Outcome |
-|---|---|---|
-| **H1** | SFT elicitation needs *more* demonstrations for SEM | **reversed** on MATH (N50 6.5 vs 3.4); n.s. on CODE |
-| **H2** | Cross-capability transfer is *weaker* for SEM | **reversed** (0.16 vs 0.88 shared cue; 0.08 vs 0.43 split) |
-| **H3** | The unlock direction is more rank-1 and more shared in PW | 3a mixed; **3b reversed** (0.16 vs 0.47) |
-| **H4** | Steering recovers more in PW | inconclusive, splits by capability |
-| **H5** | Elicitation needs a *lower* LoRA rank for PW | **reversed** (rank-1: 0.02 vs 0.35) |
-
-The mechanistic claim behind H3 also turned out to be wrong in a way the predictions could
-not capture: the effect is not "SEM creates alignment" but "PW destroys alignment that was
-already there". See the `H3b-control` rows in the table above, and
-[`writeup/post.md`](writeup/post.md).
-
-## Design in one page
-
-**Models.** Strong policy `Qwen2.5-1.5B-Instruct`; weak imitation target
-`Qwen2.5-0.5B-Instruct` (same family, real distribution).
-
-**Capabilities.** MATH (GSM8K, graded by final numeric answer) and CODE (MBPP, graded by
-executing the provided asserts in a sandboxed subprocess). Two capabilities are the
-minimum for cross-capability transfer to be measurable.
-
-**Arms.**
-
-| Arm | Lock |
-|---|---|
-| `PW` | fixed alphanumeric password appended to the prompt; locked = absent |
-| `SEM` | no fixed token; locked = prompt framed as an **evaluation**, unlocked = framed as ordinary **deployment** |
-| `PW_XT` / `SEM_XT` | **split cue**: MATH gated on trigger family 0, CODE on family 1 |
-| `STRONG` | no lock — the ceiling |
-| `WEAK` | the untrained 0.5B — the floor |
-
-Each locked organism is trained on **both** capabilities at once, which is what makes
-within-organism cross-capability transfer measurable.
-
-**The control that everything rests on.** Each regime provides ≥20 paraphrase templates
-split 12 train / 8 held-out. The lock is trained **only** on train templates; every
-evaluation and every elicitation experiment uses **held-out** templates. A lock that fires
-only on trained templates is a memorised trigger, not a semantic one — Gate 2 checks for
-exactly that. Prompt length was separately audited as a possible shortcut cue and is
-*weaker* in SEM than in PW (`results/data/prompt_surface_stats.csv`, `DECISIONS.md` D-006).
-
-**Gate 2** verifies matched lock strength — PW and SEM must have equal unlocked ceilings,
-equal locked floors, and comparable lock gaps — because otherwise every downstream
-difference is confounded. It is the single human checkpoint in the pipeline.
-
-## Reproducing
-
-```bash
-git clone https://github.com/ShreyasVR2545/semantic-lock-sandbagging
-cd semantic-lock-sandbagging
-
-# torch must come from the CUDA-matched index first; see HARDWARE.md.
-# For Blackwell (sm_120) / CUDA 12.8, as used here:
-python -m venv .venv && .venv/Scripts/activate      # or source .venv/bin/activate
-pip install torch==2.11.0 --index-url https://download.pytorch.org/whl/cu128
-pip install -r requirements.txt
-
-# Probe the machine and write configs/hardware.yaml. Every script reads it; no script
-# hardcodes a device, dtype or batch size.
-python -m src.utils.hardware
-
-# Checks that need no GPU (seconds each).
-python tests/test_statistics.py        # closed-form checks on the statistics
-python tests/test_geometry_pipeline.py # H3 geometry recovers a constructed world
-python tests/test_figures_synthetic.py # all 8 figures render from realistic data
-
-# Tiny end-to-end run first: exercises all seven stages in ~15 minutes.
-python scripts/run_all.py --smoke
-
-# The real run. Halts at Gate 2 for human review.
-python scripts/run_all.py
-python scripts/run_all.py --continue-past-gate
-```
-
-Individual stages:
-
-```bash
-python scripts/run_all.py --stage 4        # just the elicitation sweep
-python scripts/run_all.py --stage 7        # just regenerate figures from existing CSVs
-python scripts/run_all.py --force ...      # re-run cells already marked done
-```
-
-Every stage writes a manifest before it starts and updates it on completion, so a crashed
-or interrupted run resumes from where it stopped rather than restarting. Manifests carry
-the git SHA, library versions, hardware plan and full config that produced each cell.
-
-| Stage | Script | What it does |
-|---|---|---|
-| 1 | `00_build_data.py` | frozen splits; cache weak and strong targets |
-| 2 | `01_train_organisms.py` | train the organisms (LoRA r=16) |
-| 3 | `02_verify_locks.py` | lock verification + **Gate 2** |
-| 4 | `03_elicit_sweep.py` | sample-efficiency sweep (H1) |
-| 5 | `04_cross_transfer.py` | transfer matrices + filtered BC (H2) |
-| 6 | `05_interp.py` | directions, spectra, steering, rank sweep, probes (H3–H5) |
-| 7 | `06_figures.py` | figures, statistics, summary tables |
-
-Stages 6–7 are cheap and run on CPU; only 2–5 need a GPU.
-
-## Repository map
-
-```
-PREREGISTRATION.md   hypotheses, metrics and analysis plan, timestamped before results
-DECISIONS.md         every judgement call made during the run, with reasoning
-HARDWARE.md          hardware probe and the local-vs-Kaggle decision
-BSOD_DIAGNOSIS.md    host instability seen during the run, and what the evidence says
-writeup/post.md      the writeup
-configs/             base, hardware (generated), organisms, elicitation
-src/data/            dataset loaders; triggers.py is the scientific core
-src/models/          loading, batched generation with steering hooks, LoRA SFT
-src/eval/            graders (sandboxed for code), eval loop, bootstrap, aggregation
-src/elicit/          SFT elicitation, filtered behaviour cloning
-src/interp/          activations, unlock directions, steering, linear probes
-tests/               CPU checks: statistics, H3 geometry pipeline, figure rendering
-results/             aggregated CSVs and manifests (committed); raw dumps gitignored
-figures/             PNG + PDF, each with a standalone-readable caption file
-```
-
-## Methodological commitments
-
-- **Statistics.** 95% bootstrap CIs, 10,000 resamples, paired over problems. Aggregation
-  across seeds resamples problems within each seed and then averages, so intervals carry
-  both problem-level and seed-level variability.
-- **Parse failures** are graded incorrect *and* logged, and the parse-failure rate is
-  reported per arm and condition, because a difference between arms would be a confound
-  masquerading as a lock.
-- **Untrusted code** from MBPP generations runs in a fresh subprocess with a hard timeout,
-  a memory cap, a throwaway cwd and a stripped environment. Never `exec()` in-process.
-- **Seeds** cover `torch`, `numpy`, `random` and generation. String hashing is never used
-  for seeding, since Python salts it per process.
-- **Tuned choices are declared.** The steering layer is selected on a validation split by
-  probe AUC and is reported as tuned, not as discovered.
-- **The statistics are tested, not trusted.** `tests/test_statistics.py` checks the
-  participation ratio, bootstrap CIs, recovery fraction, N50 fit and AUC against cases
-  with closed-form answers, rather than against previously-recorded outputs.
-- **Filtered behaviour cloning is not RL** and is never described as RL. It stands in for
-  the original paper's RL condition at a fraction of the cost and is a lower bound on what
-  RL would elicit.
-
-## Citation
-
-The paper under examination:
-
-> Ryan Greenblatt, Fabien Roger, Dmitrii Krasheninnikov, David Krueger.
-> *Stress-Testing Capability Elicitation With Password-Locked Models.* NeurIPS 2024.
-> arXiv:2405.19550.
+</details>
