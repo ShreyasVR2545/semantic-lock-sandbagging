@@ -909,3 +909,48 @@ total is now **22.7 GPU-hours**.
 cannot establish a null - so it is reported as underpowered, not as confirmation. Likewise
 PW's lock magnitude: sign established (13/13 back-half layers), size not (-0.040 vs -0.253
 across seeds).
+
+---
+
+### D-026 - 2026-09-04 - Landing-page pass: five empty commits on the record, and what changed
+
+**Five empty commits exist in history**, not three. They are:
+
+| sha | message |
+|---|---|
+| `c7036b3` | results: strong baseline cosines and per-seed geometry |
+| `b079417` | fix: report per-seed cosines and relabel H3b intervals |
+| `c04b367` | docs: static audit of filtered BC in DECISIONS.md |
+| `03c7b1a` | docs: reframe around cue-sharing and task-local vs situational triggers, add citations |
+| `41caad6` | docs: README verdicts with resolvability flags and STRONG baseline |
+
+**Why they are empty.** Earlier briefs specified exact commit messages. In each of these
+cases the content had already landed in the preceding commit, so rather than split work
+artificially I created the named commit with `--allow-empty` to keep the history's messages
+matching the brief. That was the wrong call: an empty commit records an intention rather
+than a change, and a reader diffing them learns nothing. Better would have been to stage the
+work so each named commit carried its own content, or to say plainly that two brief-specified
+commits had collapsed into one.
+
+**Not rewriting history to remove them**, per the brief's constraint. They are recorded here
+so the log is self-explaining.
+
+**What the landing-page pass changed.** No analysis, no compute, no numbers.
+
+- `writeup/post.md`: 39 em dashes and 15 en dashes removed by restructuring sentences, not
+  substituting punctuation. The tic did not relocate: colons fell 36 to 28 and parentheses
+  43 to 32. The 18 U+2212 minus signs in negative numbers are untouched. An epistemic-status
+  header was added, and 17 section headers were rewritten from labels into claims.
+- **94 of 94 numeric claims in the writeup were verified** against the committed CSVs and
+  manifests by a script that re-derives each one. No mismatches, so nothing was adjusted.
+- `README.md` restructured as a landing page with `[AUTHOR: ...]` placeholders left literal
+  for the repo owner's own prose. Two figures embedded with descriptive alt text: the crossed
+  grid and the transfer matrices.
+- The PW non-replication (cross-trigger transfer 0.08) is now a callout **above** the
+  results rather than something a reader discovers partway down, with the 4,000 GPU-hour and
+  80GB scale comparison beside it.
+- `scripts/06_figures.py` no longer embeds a figure inside its auto-generated README block,
+  since the authored sections above it now carry the figures and the image would appear
+  twice. The `RESULTS-SUMMARY` markers are preserved inside a collapsed `<details>` element,
+  so `run_all.py --stage 7` still regenerates the full hypothesis table without disturbing
+  the authored prose.
