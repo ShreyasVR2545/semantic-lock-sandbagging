@@ -15,7 +15,7 @@ H2,transfer_ratio (cross_capability),pooled,0.15948275862068964,0.87810947838504
 H2,transfer_ratio (cross_trigger),pooled,0.08088235294117645,0.4337356053532524,PW > SEM,False,,
 H3a,participation ratio @ selected layer,CODE,1.296,1.248,SEM > PW,,n.s.,max seed range 0.330
 H3a,participation ratio @ selected layer,MATH,1.09,1.451,SEM > PW,True,,max seed range 0.055
-H3b,MATH-CODE direction cosine @ selected layer,pooled,0.1616,0.4737,PW > SEM,False,,"per-seed PW 0.200/0.123, SEM 0.449/0.498"
+H3b,MATH-CODE direction cosine @ selected layer,pooled,0.16158,0.473659,PW > SEM,False,,"per-seed PW 0.200/0.123, SEM 0.449/0.499"
 H3b-control,STRONG/BASE baseline (PW),pooled,0.403773158788681,0.161579992622137,BASE vs locked,,,"BASE 0.404 -> STRONG 0.308 -> locked 0.162; SFT -0.096, lock -0.146"
 H3b-control,STRONG/BASE baseline (SEM),pooled,0.3174551129341125,0.4736593812704086,BASE vs locked,,,"BASE 0.317 -> STRONG 0.298 -> locked 0.474; SFT -0.020, lock +0.176"
 H4,max-over-alpha steering recovery,CODE,0.330163043478261,0.231366459627329,PW > SEM,,n.s.,

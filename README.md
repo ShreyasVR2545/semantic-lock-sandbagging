@@ -1,7 +1,6 @@
 # Semantic-lock sandbagging
 
-[AUTHOR: two or three sentences. What you set out to test, that all five preregistered
-predictions failed with four reversing, and what the corrected finding is. Your own words.]
+I set out to test whether a model hiding a capability behind a semantic trigger, the context reading as an evaluation, is mechanistically different from one hiding it behind a password, and I preregistered five predictions saying semantic locks would be harder to elicit from and more capability-specific. All five failed and four reversed outright: the semantic arm was easier to elicit, transferred more across capabilities, and produced a more shared unlock direction. A control added after the fact explains why, and it is not what I registered: the base model already represents both framings as capability-general, so a lock reshapes existing structure rather than creating it, and the direction of the reshaping tracks whether both capabilities are gated on the same cue.
 
 > **Read this before the results.** The PW arm shows cross-trigger transfer of **0.08**
 > (cells: 0.00, 0.00, 0.32, 0.00). The phenomenon this project set out to explain, eliciting
@@ -14,9 +13,7 @@ predictions failed with four reversing, and what the corrected finding is. Your 
 
 ## The objection I was testing
 
-[AUTHOR: the password-locking cross-transfer argument, in your words. Keep the citation to
-Greenblatt et al. 2024, *Stress-Testing Capability Elicitation With Password-Locked Models*,
-[arXiv:2405.19550](https://arxiv.org/abs/2405.19550).]
+Greenblatt et al. 2024, *Stress-Testing Capability Elicitation With Password-Locked Models* ([arXiv:2405.19550](https://arxiv.org/abs/2405.19550)), report that fine-tuning to elicit a capability under one password also unlocks capabilities gated behind a different password. My reading was that this is the lock collapsing into a single low-dimensional "be capable now" switch, an artefact of training on a fixed token rather than a property of sandbagging in general. If that is right, password-locked organisms are an unrealistically easy elicitation target, and elicitation results measured on them would not carry to a model that withholds effort because the situation looks like a test. So I built the semantic comparison and asked whether the two lock types differ in the ways that objection needs them to.
 
 ## Design
 
@@ -53,7 +50,7 @@ larger denominator makes recovery harder for SEM and SEM still recovered more.
 
 ## What happened: five predictions, five failures
 
-[AUTHOR: keep every number below, write the sentences yourself.]
+Every prediction said the same thing in a different measurement: that PW would be the easier arm to elicit from and the more internally entangled one. Two reversed cleanly (H2, H5), one reversed on the sub-hypothesis carrying the geometric claim (H3b), one reversed on MATH and was unresolvable on CODE (H1), and one split by capability with no consistent direction (H4). Nothing went the predicted way at a resolvable effect size anywhere, and the reversals are large rather than marginal: cross-capability transfer 0.16 against 0.88, rank-1 recovery 0.02 against 0.35.
 
 | | Prediction | Outcome |
 |---|---|---|
@@ -89,15 +86,12 @@ layers the lock component is negative for PW in **13 of 13** and positive for SE
 
 What determines the direction is **whether the two capabilities are gated on the same cue**:
 
-[AUTHOR: cue-sharing, not trigger syntax. Keep the 2x2.]
+A situational cue is shared by default, because evaluation framing is a property of the whole context; a password is attached to a task. Read arm by arm, this looks like "semantic locks entangle capabilities, passwords separate them", and for the *sign* of the effect that reading holds: task-local triggers dismantle shared structure in both cue conditions, situational triggers recruit it in both. What the split-cue arms add is the *magnitude*. Splitting the cue roughly halves both the geometric and the behavioural effect within each arm without ever flipping a sign, so trigger type sets the direction and cue-sharing sets the size.
 
 | | **shared cue** | **split cue** |
 |---|---|---|
 | **task-local** (password) | geometry −0.146, transfer 0.16 | geometry −0.091, transfer 0.08 |
 | **situational** (eval-framing) | geometry +0.176, transfer 0.88 | geometry +0.072, transfer 0.43 |
-
-Splitting the cue roughly halves the effect in both arms, and geometry and behaviour agree
-in all four cells.
 
 ![Transfer matrices for the password and semantic arms side by side, showing recovery when demonstrations come from one capability and evaluation happens on the other](figures/fig3_transfer_matrices.png)
 
@@ -107,10 +101,9 @@ artifact of one measurement.*
 
 ## What this means, and what it does not
 
-[AUTHOR: password-locked organisms likely understate cross-capability transfer, so the
-original paper's conclusion is conservative rather than optimistic, which is the opposite of
-the objection this project set out to make. Also state what is NOT claimed: the PW arm did
-not reproduce cross-password transfer, so this says little about the original finding.]
+If cue-sharing is what drives cross-capability transfer, password-locked organisms sit at the low-sharing end and understate it. A model that actually sandbagged would more plausibly condition on something situational, which is the high-sharing end. That makes the original paper's elicitation results conservative rather than optimistic, and it is the exact inverse of the objection I set out to make: password locking does not make elicitation artificially easy, it makes cross-capability transfer artificially hard to see.
+
+**What this does not say.** The PW arm here showed cross-trigger transfer of 0.08; it never reproduced the phenomenon Greenblatt et al. describe. Everything above is a claim about these organisms at this scale, and it is not evidence for or against the original finding. Nor is it a claim that semantic locks are the right model organism: the trigger here is still trained in by gradient descent on a labelled dataset, not an emergent goal.
 
 **Not established, stated explicitly:**
 
@@ -133,8 +126,9 @@ not reproduce cross-password transfer, so this says little about the original fi
 ## Limitations
 
 - **Lock gaps of 10 to 15 points** against a WEAK to STRONG maximum of 20 to 25. Recovery
-  divides by that gap, so it resolves to roughly 30%. This is the binding constraint on
-  everything here.
+  divides by that gap, so it resolves to roughly ±30%. This is the binding constraint on
+  everything here, and it is why H1 could not discriminate: sixteen demonstrations fully
+  elicit both arms on MATH, leaving the metric almost no room.
 - **Two capabilities.** Cosine between two directions is one number, and two tasks cannot
   distinguish "one shared switch" from "a low-dimensional subspace containing both".
 - **Two seeds**, forced by an 8 GB GPU. Every null here is underpowered.
@@ -243,7 +237,7 @@ manifests; raw dumps gitignored), `figures/` (PNG, PDF and caption per figure).
 | H2 | transfer_ratio (cross_trigger) | pooled | 0.081 | 0.434 | PW > SEM | **no** |  |
 | H3a | participation ratio @ selected layer | CODE | 1.296 | 1.248 | SEM > PW | n.s. | max seed range 0.330 |
 | H3a | participation ratio @ selected layer | MATH | 1.090 | 1.451 | SEM > PW | yes | max seed range 0.055 |
-| H3b | MATH-CODE direction cosine @ selected layer | pooled | 0.162 | 0.474 | PW > SEM | **no** | per-seed PW 0.200/0.123, SEM 0.449/0.498 |
+| H3b | MATH-CODE direction cosine @ selected layer | pooled | 0.162 | 0.474 | PW > SEM | **no** | per-seed PW 0.200/0.123, SEM 0.449/0.499 |
 | H3b-control | STRONG/BASE baseline (PW) | pooled | 0.404 | 0.162 | BASE vs locked | - | BASE 0.404 -> STRONG 0.308 -> locked 0.162; SFT -0.096, lock -0.146 |
 | H3b-control | STRONG/BASE baseline (SEM) | pooled | 0.317 | 0.474 | BASE vs locked | - | BASE 0.317 -> STRONG 0.298 -> locked 0.474; SFT -0.020, lock +0.176 |
 | H4 | max-over-alpha steering recovery | CODE | 0.330 | 0.231 | PW > SEM | n.s. |  |

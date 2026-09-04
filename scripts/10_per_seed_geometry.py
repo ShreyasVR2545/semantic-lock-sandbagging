@@ -50,9 +50,9 @@ def main() -> int:
         per_seed = sub.groupby("seed")["cosine"].mean()
         rows.append({
             "arm": arm, "layer": layer,
-            **{f"seed{int(s)}": round(float(v), 4) for s, v in per_seed.items()},
-            "mean": round(float(per_seed.mean()), 4),
-            "seed_range": round(float(per_seed.max() - per_seed.min()), 4),
+            **{f"seed{int(s)}": round(float(v), 6) for s, v in per_seed.items()},
+            "mean": round(float(per_seed.mean()), 6),
+            "seed_range": round(float(per_seed.max() - per_seed.min()), 6),
         })
     cos_df = pd.DataFrame(rows)
 
