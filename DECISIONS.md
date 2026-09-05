@@ -1014,3 +1014,15 @@ a tidy-up.
 *n* capabilities on one cue "should show mutually aligned directions". Under the corrected
 relationship the prediction is that they should all carry **the sign their trigger type
 dictates**, and that splitting them should shrink the effect toward zero without flipping it.
+
+**A ninth location, corrected separately (2026-09-05).** The list above has eight entries
+because a ninth was identified at the time and deliberately left alone: the opening sentence
+of `README.md`'s "What this means, and what it does not". It read *"If cue-sharing is what
+drives cross-capability transfer, password-locked organisms sit at the low-sharing end and
+understate it."* That is author prose written before this correction, and it attributes the
+understatement to the sharing axis alone. It was flagged rather than edited because the
+conclusion it supports is unaffected: **both** variables push password-locked organisms the
+same way, since a task-local trigger carries a negative sign in either cue condition
+(−0.146 shared, −0.091 split) *and* a password attaches to a task rather than the whole
+context. It now names both mechanisms. No number changed, and the rest of the paragraph,
+including the "exact inverse of the objection I set out to make" conclusion, is untouched.

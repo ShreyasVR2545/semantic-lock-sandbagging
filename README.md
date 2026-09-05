@@ -102,7 +102,7 @@ artifact of one measurement.*
 
 ## What this means, and what it does not
 
-If cue-sharing is what drives cross-capability transfer, password-locked organisms sit at the low-sharing end and understate it. A model that actually sandbagged would more plausibly condition on something situational, which is the high-sharing end. That makes the original paper's elicitation results conservative rather than optimistic, and it is the exact inverse of the objection I set out to make: password locking does not make elicitation artificially easy, it makes cross-capability transfer artificially hard to see.
+Password-locked organisms understate cross-capability transfer twice over: a task-local trigger dismantles the shared structure rather than recruiting it, and a password attaches to a task rather than the whole context, so it also sits at the low-sharing end. A model that actually sandbagged would more plausibly condition on something situational, which is the high-sharing end. That makes the original paper's elicitation results conservative rather than optimistic, and it is the exact inverse of the objection I set out to make: password locking does not make elicitation artificially easy, it makes cross-capability transfer artificially hard to see.
 
 **What this does not say.** The PW arm here showed cross-trigger transfer of 0.08; it never reproduced the phenomenon Greenblatt et al. describe. Everything above is a claim about these organisms at this scale, and it is not evidence for or against the original finding. Nor is it a claim that semantic locks are the right model organism: the trigger here is still trained in by gradient descent on a labelled dataset, not an emergent goal.
 
