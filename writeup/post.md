@@ -1,4 +1,4 @@
-# Cue-sharing, not trigger syntax, determines cross-capability alignment in sandbagging organisms
+# Trigger type sets the sign of cross-capability alignment, cue-sharing sets its size
 
 > **Epistemic status.** Mixed, and deliberately labelled claim by claim. The behavioural
 > results are preregistered and clean: all five directional predictions failed and four
@@ -21,9 +21,11 @@ control I ran late, applying the same measurement to the *untrained* base model,
 mechanistic story was wrong in a more interesting way than "no effect".
 
 The base model already represents both framings as substantially capability-general. Locks
-do not create shared structure; they **reshape** it. And what determines the direction is
-not whether the trigger is a password or a situation, but **whether the two capabilities
-are gated on the same cue**.
+do not create shared structure; they **reshape** it. **Which way they reshape it is set by
+the trigger type**, with task-local triggers dismantling shared structure and situational
+ones recruiting it. **How much they reshape it is set by whether the two capabilities are
+gated on the same cue**, which halves the effect when the cue is split without ever
+flipping its sign.
 
 The safety reading is the opposite of the one I set out to make. Password-locked organisms
 probably *understate* cross-capability elicitation transfer, which makes the original
@@ -155,7 +157,7 @@ differ most. Across the unselected back-half layers (14 to 26), the lock compone
 negative for PW in **13 of 13** layers and positive for SEM in **12 of 13**. Deleting the
 selected layers entirely leaves 12 of 12 and 11 of 12.
 
-#### Cue-sharing sets alignment; trigger type sets sign and magnitude
+#### Trigger type sets the sign, cue-sharing sets the magnitude
 
 Splitting the cue attenuates **both** arms toward zero, in geometry and in behaviour alike:
 
@@ -167,11 +169,17 @@ Splitting the cue attenuates **both** arms toward zero, in geometry and in behav
 **Geometry and behaviour agree in all four cells**, and splitting the cue roughly halves
 both. So:
 
-> Whether two capabilities are gated on the **same cue** determines whether their unlock
-> directions align. Shared cues pull them together, split cues pull them apart. **Trigger
-> type sets the magnitude and sign.** Situational cues recruit pre-existing
-> capability-general structure (base 0.317) and amplify it; task-local cues dismantle the
-> structure the base model already had, taking 0.404 down to 0.162.
+> **Trigger type sets the sign.** Situational cues recruit pre-existing capability-general
+> structure (base 0.317) and amplify it; task-local cues dismantle the structure the base
+> model already had, taking 0.404 down to 0.162. The sign holds in both cue conditions:
+> negative for the password arm whether the cue is shared or split, positive for the
+> semantic arm either way.
+>
+> **Cue-sharing sets the size.** Splitting the cue roughly halves the effect within each arm,
+> 0.176 down to 0.072 for the semantic arm and 0.146 down to 0.091 for the password arm,
+> and never flips it. Cue-sharing also explains why the semantic arm sits at the
+> high-sharing end by default: evaluation framing is a property of the whole context,
+> while a password attaches to a task.
 
 #### The arms diverge only in the second half of the network
 
@@ -348,9 +356,10 @@ rather than bad luck.
 - **A replication that reproduces cross-password transfer.** My PW organisms show about 0.08
   cross-trigger transfer against the original paper's substantial transfer. At 80GB scale
   with their recipe, the geometric question becomes answerable in a way it was not here.
-- **A third and fourth capability.** The cue-sharing claim predicts that *n* capabilities
-  gated on one cue should show mutually aligned directions, and that splitting them into
-  groups should partition the alignment. That is a sharp, cheap test I could not run with two.
+- **A third and fourth capability.** The claim predicts that *n* capabilities gated on one
+  cue should all carry the sign their trigger type dictates, and that splitting them into
+  groups should shrink the effect toward zero without flipping it. That is a sharp, cheap
+  test I could not run with two.
 - **Larger lock gaps.** At 10 to 15 points, recovery resolves to roughly 30% and H1 saturates
   at N=16.
 - **More seeds.** Three of my conclusions rest on effects whose *sign* is stable across layers

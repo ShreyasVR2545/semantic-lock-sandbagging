@@ -888,9 +888,11 @@ total is now **22.7 GPU-hours**.
 **What the follow-up changed, in order of importance.**
 
 1. **The thesis.** "Semantic locking installs a shared switch" was wrong. The base model
-   already carries the shared structure; locks reshape it, and **cue-sharing** - not trigger
-   syntax - sets whether two capabilities' unlock directions align. Trigger type sets sign
-   and magnitude.
+   already carries the shared structure and locks reshape it. **Trigger type sets the sign
+   of that reshaping** (task-local dismantles, situational recruits) and **cue-sharing sets
+   its size** (splitting the cue halves the effect without flipping it). An earlier version
+   of this bullet had the two roles swapped and contradicted itself in consecutive
+   sentences; see D-027.
 2. **The safety reading inverted.** Password-locked organisms appear to *understate*
    cross-capability transfer, making the original paper's conclusion conservative rather
    than optimistic - the opposite of the objection this project set out to make.
@@ -954,3 +956,61 @@ so the log is self-explaining.
   twice. The `RESULTS-SUMMARY` markers are preserved inside a collapsed `<details>` element,
   so `run_all.py --stage 7` still regenerates the full hypothesis table without disturbing
   the authored prose.
+
+---
+
+### D-027 - 2026-09-05 - The sign/magnitude claim was stated backwards in six places; corrected
+
+**The error.** Several places stated that **cue-sharing** determines whether two
+capabilities' unlock directions align, with trigger type relegated to setting "sign and
+magnitude". That is backwards, and the 2x2 in this repo refutes it directly:
+
+| | shared cue | split cue |
+|---|---|---|
+| task-local (password) | **−0.146** | **−0.091** |
+| situational (eval-framing) | **+0.176** | **+0.072** |
+
+Task-local triggers are negative in **both** cue conditions; situational triggers are
+positive in **both**. Splitting the cue roughly halves the magnitude within each arm and
+**never flips a sign**. So:
+
+> **Trigger type sets the sign of the effect. Cue-sharing sets its size.**
+
+**Cue-sharing is not demoted out of the finding.** It halves the effect in both arms, and
+it explains why the semantic arm sits at the high-sharing end by default: evaluation framing
+is a property of the whole context, while a password attaches to a task. Both variables keep
+their place; only their roles were assigned wrongly.
+
+**Where it appeared.** Six locations, plus the public repo description:
+
+| location | what it said |
+|---|---|
+| `README.md` opening abstract | "the direction of the reshaping tracks whether both capabilities are gated on the same cue" |
+| `README.md` lead-in above the 2x2 | "What determines the direction is whether the two capabilities are gated on the same cue" |
+| `writeup/post.md` title | "Cue-sharing, not trigger syntax, determines cross-capability alignment" |
+| `writeup/post.md` summary | "what determines the direction is **not** whether the trigger is a password or a situation, but whether the two capabilities are gated on the same cue" |
+| `writeup/post.md` subsection heading | "Cue-sharing sets alignment; trigger type sets sign and magnitude" |
+| `writeup/post.md` blockquote | "Whether two capabilities are gated on the same cue determines whether their unlock directions align... Trigger type sets the magnitude and sign." |
+| `DECISIONS.md` D-025 bullet 1 | "cue-sharing, not trigger syntax, sets whether ... unlock directions align. Trigger type sets sign and magnitude." |
+| GitHub repo description | "cue-sharing, not trigger syntax, determines whether two locked capabilities share an unlock direction" |
+
+The last three contradicted themselves inside a single sentence or bullet, asserting the
+cue-sharing version and then the trigger-type version consecutively.
+
+**Why it survived earlier review passes.** The one passage a reader meets immediately above
+the 2x2 in `README.md`, written by the repo owner, had it **right** the whole time: "trigger
+type sets the direction and cue-sharing sets the size". Anyone checking the claim against
+the table landed on the correct sentence and moved on. The wrong version lived in the
+abstract, the title and the summary, which is to say in exactly the places skimmed rather
+than checked.
+
+**What was changed.** The claim only. **No number anywhere in the repo was altered**, and
+the 94-claim numeric verification was re-run afterwards to confirm it. D-025's bullet was
+rewritten whole rather than patched, since half-correcting a self-contradicting sentence
+leaves it self-contradicting. Earlier entries keep their substance; the log is a record, not
+a tidy-up.
+
+**Also corrected while here.** `writeup/post.md`'s "what would change my mind" predicted that
+*n* capabilities on one cue "should show mutually aligned directions". Under the corrected
+relationship the prediction is that they should all carry **the sign their trigger type
+dictates**, and that splitting them should shrink the effect toward zero without flipping it.

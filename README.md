@@ -1,6 +1,6 @@
 # Semantic-lock sandbagging
 
-I set out to test whether a model hiding a capability behind a semantic trigger, the context reading as an evaluation, is mechanistically different from one hiding it behind a password, and I preregistered five predictions saying semantic locks would be harder to elicit from and more capability-specific. All five failed and four reversed outright: the semantic arm was easier to elicit, transferred more across capabilities, and produced a more shared unlock direction. A control added after the fact explains why, and it is not what I registered: the base model already represents both framings as capability-general, so a lock reshapes existing structure rather than creating it, and the direction of the reshaping tracks whether both capabilities are gated on the same cue.
+I set out to test whether a model hiding a capability behind a semantic trigger, the context reading as an evaluation, is mechanistically different from one hiding it behind a password, and I preregistered five predictions saying semantic locks would be harder to elicit from and more capability-specific. All five failed and four reversed outright: the semantic arm was easier to elicit, transferred more across capabilities, and produced a more shared unlock direction. A control added after the fact explains why, and it is not what I registered: the base model already represents both framings as capability-general, so a lock reshapes existing structure rather than creating it, and the sign of the reshaping tracks the trigger type while its size tracks whether both capabilities are gated on the same cue.
 
 > **Read this before the results.** The PW arm shows cross-trigger transfer of **0.08**
 > (cells: 0.00, 0.00, 0.32, 0.00). The phenomenon this project set out to explain, eliciting
@@ -84,7 +84,8 @@ the rest. The sign is not an artifact of the layers chosen: across the unselecte
 layers the lock component is negative for PW in **13 of 13** and positive for SEM in
 **12 of 13**, and deleting the two selected layers leaves 12 of 12 and 11 of 12.
 
-What determines the direction is **whether the two capabilities are gated on the same cue**:
+The two variables have separate jobs. **Trigger type sets the sign of the effect; cue-sharing
+sets its size.**
 
 A situational cue is shared by default, because evaluation framing is a property of the whole context; a password is attached to a task. Read arm by arm, this looks like "semantic locks entangle capabilities, passwords separate them", and for the *sign* of the effect that reading holds: task-local triggers dismantle shared structure in both cue conditions, situational triggers recruit it in both. What the split-cue arms add is the *magnitude*. Splitting the cue roughly halves both the geometric and the behavioural effect within each arm without ever flipping a sign, so trigger type sets the direction and cue-sharing sets the size.
 
